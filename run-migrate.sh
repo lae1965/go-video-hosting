@@ -1,0 +1,1 @@
+migrate -path ./schema -database "postgresql://postgres:lae1965@localhost:5436/go_video_hosting?sslmode=disable" -verbose up
