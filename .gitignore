@@ -1,5 +1,5 @@
 .idea
-.env
+
 .database
 .DS_Store
 /data/
