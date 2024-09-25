@@ -1,14 +1,21 @@
 package repository
 
-import "github.com/jmoiron/sqlx"
+import (
+	"go-video-hosting/pkg/model"
 
-type User interface {
+	"github.com/jmoiron/sqlx"
+)
+
+type Users interface {
+	CreateUser(user model.Users) (int, error)
 }
 
 type Repository struct {
-	User
+	Users
 }
 
 func NewRepository(db *sqlx.DB) *Repository {
-	return &Repository{}
+	return &Repository{
+		Users: NewUserPostgres(db),
+	}
 }

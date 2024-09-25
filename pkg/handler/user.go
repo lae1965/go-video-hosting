@@ -1,9 +1,27 @@
 package handler
 
-import "github.com/gin-gonic/gin"
+import (
+	"go-video-hosting/pkg/model"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
 
 func (handler *Handler) registration(ctx *gin.Context) {
+	var input model.Users
 
+	if err := ctx.BindJSON(&input); err != nil {
+		newErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	id, err := handler.services.CreateUser(input)
+	if err != nil {
+		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, map[string]interface{}{"id": id})
 }
 
 func (handler *Handler) login(ctx *gin.Context) {

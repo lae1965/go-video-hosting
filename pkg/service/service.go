@@ -1,14 +1,20 @@
 package service
 
-import "go-video-hosting/pkg/repository"
+import (
+	"go-video-hosting/pkg/model"
+	"go-video-hosting/pkg/repository"
+)
 
-type User interface {
+type Users interface {
+	CreateUser(user model.Users) (int, error)
 }
 
 type Service struct {
-	User
+	Users
 }
 
 func NewService(repo *repository.Repository) *Service {
-	return &Service{}
+	return &Service{
+		Users: NewUserService(repo.Users),
+	}
 }

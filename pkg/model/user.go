@@ -10,7 +10,7 @@ const (
 	SuperAdminRole
 )
 
-type User struct {
+type Users struct {
 	Id              int       `json:"-"`
 	NickName        string    `json:"nickName"`
 	Email           string    `json:"email"`
