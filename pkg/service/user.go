@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"go-video-hosting/pkg/model"
 	"go-video-hosting/pkg/repository"
+	"os"
 )
-
-const salt = "sdaf54jfbjbjyjb6bnaSldHNVV8d0qwjeh"
 
 type UserService struct {
 	repo repository.Users
@@ -27,5 +26,5 @@ func (userService *UserService) GenerateHashPassword(password string) string {
 	hash := sha1.New()
 	hash.Write([]byte(password))
 
-	return fmt.Sprintf("%x", hash.Sum([]byte(salt)))
+	return fmt.Sprintf("%x", hash.Sum([]byte(os.Getenv("SALT"))))
 }
