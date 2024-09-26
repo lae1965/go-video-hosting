@@ -15,6 +15,12 @@ func (handler *Handler) registration(ctx *gin.Context) {
 		return
 	}
 
+	validate := model.GetValidator()
+	if err := validate.Struct(input); err != nil {
+		newErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	id, err := handler.services.CreateUser(input)
 	if err != nil {
 		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())

@@ -1,6 +1,10 @@
 package model
 
-import "time"
+import (
+	_ "github.com/go-playground/validator/v10"
+
+	"time"
+)
 
 type Role int
 
@@ -12,9 +16,9 @@ const (
 
 type Users struct {
 	Id              int       `json:"-"`
-	NickName        string    `json:"nickName"`
-	Email           string    `json:"email"`
-	Password        string    `json:"password"`
+	NickName        string    `json:"nickName" validate:"required,min=3,max=30"`
+	Email           string    `json:"email" validate:"required,email"`
+	Password        string    `json:"password" validate:"password"`
 	FirstName       string    `json:"firstName"`
 	LastName        string    `json:"lastName"`
 	BirthDate       time.Time `json:"birthDate"`
