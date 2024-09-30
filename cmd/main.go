@@ -2,10 +2,10 @@ package main
 
 import (
 	"go-video-hosting/internal/server"
+	"go-video-hosting/pkg/database"
 	"go-video-hosting/pkg/handler"
-	"go-video-hosting/pkg/repository"
 	"go-video-hosting/pkg/service"
-	"os"
+	"go-video-hosting/pkg/validator"
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
@@ -24,25 +24,23 @@ func main() {
 		logrus.Fatalf("Error loading env variables: %s", err.Error())
 	}
 
-	db, err := repository.NewPostgresDB(repository.Config{
-		Host:     viper.GetString("db.host"),
-		Port:     viper.GetString("db.port"),
-		Username: viper.GetString("db.username"),
-		DBName:   viper.GetString("db.dbname"),
-		SSLMode:  viper.GetString("db.sslmode"),
-		Password: os.Getenv("DB_PASSWORD"),
-	})
-
+	db, err := database.Connection()
 	if err != nil {
 		logrus.Fatalf("Failed to installation db: %s", err.Error())
 	}
 
-	repo := repository.NewRepository(db)
+	validate := validator.NewValidator()
+
+	repo := database.NewDatabase(db)
 	service := service.NewService(repo)
-	handlers := handler.NewHandler(service)
+	handlers := handler.NewHandler(service, validate)
 	srv := new(server.Server)
 
-	if err := srv.Run(viper.GetString("port"), handlers.InitRoutes()); err != nil {
+	port := viper.GetString("port")
+	if port == " " {
+		port = "8080"
+	}
+	if err := srv.Run(port, handlers.InitRoutes()); err != nil {
 		logrus.Fatalf("Error occured while running http server: %s", err.Error())
 	}
 }
