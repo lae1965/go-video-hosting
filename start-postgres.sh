@@ -1,1 +1,0 @@
-docker run --name=go-video-hosting -e POSTGRES_PASSWORD=lae1965 -p 5436:5432 -d --rm -v ./data:/var/lib/postgresql/data postgres
