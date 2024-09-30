@@ -2,16 +2,18 @@ package handler
 
 import (
 	"go-video-hosting/pkg/service"
+	"go-video-hosting/pkg/validator"
 
 	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
-	services *service.Service
+	services   *service.Service
+	validators *validator.Validator
 }
 
-func NewHandler(services *service.Service) *Handler {
-	return &Handler{services: services}
+func NewHandler(services *service.Service, validators *validator.Validator) *Handler {
+	return &Handler{services: services, validators: validators}
 }
 
 func (handler *Handler) InitRoutes() *gin.Engine {

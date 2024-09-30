@@ -1,4 +1,4 @@
-package repository
+package database
 
 import (
 	"go-video-hosting/pkg/model"

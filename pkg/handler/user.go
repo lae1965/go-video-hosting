@@ -15,8 +15,7 @@ func (handler *Handler) registration(ctx *gin.Context) {
 		return
 	}
 
-	validate := model.GetValidator()
-	if err := validate.Struct(input); err != nil {
+	if err := handler.validators.Validate.Struct(input); err != nil {
 		newErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}

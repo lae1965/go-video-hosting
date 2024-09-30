@@ -3,16 +3,16 @@ package service
 import (
 	"crypto/sha1"
 	"fmt"
+	"go-video-hosting/pkg/database"
 	"go-video-hosting/pkg/model"
-	"go-video-hosting/pkg/repository"
 	"os"
 )
 
 type UserService struct {
-	repo repository.Users
+	repo database.Users
 }
 
-func NewUserService(repo repository.Users) *UserService {
+func NewUserService(repo database.Users) *UserService {
 	return &UserService{repo: repo}
 }
 

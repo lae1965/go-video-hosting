@@ -1,4 +1,4 @@
-package model
+package validator
 
 import (
 	"unicode"
@@ -6,14 +6,14 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-var ValidatorInstance *validator.Validate
+type Validator struct {
+	Validate *validator.Validate
+}
 
-func GetValidator() *validator.Validate {
-	if ValidatorInstance == nil {
-		ValidatorInstance = validator.New()
-		ValidatorInstance.RegisterValidation("password", PasswordValidator)
-	}
-	return ValidatorInstance
+func NewValidator() *Validator {
+	validator := new(Validator)
+	validator.Validate.RegisterValidation("password", PasswordValidator)
+	return validator
 }
 
 func PasswordValidator(fl validator.FieldLevel) bool {
@@ -31,7 +31,6 @@ func PasswordValidator(fl validator.FieldLevel) bool {
 		if unicode.IsSpace(char) {
 			return false
 		}
-
 		if unicode.IsUpper(char) {
 			wasUpper = true
 		} else if unicode.IsLower(char) {

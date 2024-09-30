@@ -1,8 +1,8 @@
 package service
 
 import (
+	"go-video-hosting/pkg/database"
 	"go-video-hosting/pkg/model"
-	"go-video-hosting/pkg/repository"
 )
 
 type Users interface {
@@ -13,7 +13,7 @@ type Service struct {
 	Users
 }
 
-func NewService(repo *repository.Repository) *Service {
+func NewService(repo *database.Database) *Service {
 	return &Service{
 		Users: NewUserService(repo.Users),
 	}
