@@ -6,8 +6,8 @@ import (
 	"go-video-hosting/pkg/handler"
 	"go-video-hosting/pkg/service"
 	"go-video-hosting/pkg/validator"
+	"os"
 
-	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -20,8 +20,11 @@ func main() {
 		logrus.Fatalf("Error initialization config: %s", err.Error())
 	}
 
-	if err := godotenv.Load(); err != nil {
-		logrus.Fatalf("Error loading env variables: %s", err.Error())
+	envVars := []string{"DB_PASSWORD", "SALT"}
+	for _, envVar := range envVars {
+		if os.Getenv(envVar) == "" {
+			logrus.Fatalf("Requied environment variable %s is not set", envVar)
+		}
 	}
 
 	db, err := database.Connection()
@@ -30,7 +33,6 @@ func main() {
 	}
 
 	validate := validator.NewValidator()
-
 	repo := database.NewDatabase(db)
 	service := service.NewService(repo)
 	handlers := handler.NewHandler(service, validate)

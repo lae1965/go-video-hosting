@@ -11,7 +11,9 @@ type Validator struct {
 }
 
 func NewValidator() *Validator {
-	validator := new(Validator)
+	validator := &Validator{
+		Validate: validator.New(),
+	}
 	validator.Validate.RegisterValidation("password", PasswordValidator)
 	return validator
 }
