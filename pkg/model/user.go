@@ -15,7 +15,7 @@ const (
 )
 
 type Users struct {
-	Id              int       `json:"-"`
+	Id              int       `json:"id"`
 	NickName        string    `json:"nickName" validate:"required,min=3,max=30"`
 	Email           string    `json:"email" validate:"required,email"`
 	Password        string    `json:"password" validate:"password"`

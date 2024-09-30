@@ -39,7 +39,7 @@ func main() {
 	srv := new(server.Server)
 
 	port := viper.GetString("port")
-	if port == " " {
+	if port == "" {
 		port = "8080"
 	}
 	if err := srv.Run(port, handlers.InitRoutes()); err != nil {
