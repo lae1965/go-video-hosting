@@ -1,8 +1,11 @@
 package handler
 
+import "fmt"
+
 import (
 	"go-video-hosting/pkg/model"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,13 +23,15 @@ func (handler *Handler) registration(ctx *gin.Context) {
 		return
 	}
 
-	id, err := handler.services.CreateUser(input)
+	tokenResponse, err := handler.services.CreateUser(input)
 	if err != nil {
 		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, map[string]interface{}{"id": id})
+	ctx.SetCookie("refreshToken", tokenResponse.RefreshToken, int(time.Hour*24*60), "/", "", false, true)
+	ctx.SetCookie("refreshTokenId", fmt.Sprint(tokenResponse.RefreshTokenId), int(time.Hour*24*60), "/", "", false, true)
+	ctx.JSON(http.StatusCreated, gin.H{"id": tokenResponse.UserId, "accessToken": tokenResponse.AccessToken})
 }
 
 func (handler *Handler) login(ctx *gin.Context) {

@@ -29,3 +29,8 @@ type Users struct {
 	ChannelsCount   int       `json:"channelsCount"`
 	CreateTimestamp time.Time `json:"createTimestamp"`
 }
+
+type UserResponse struct {
+	*TokenResponse
+	UserId int
+}

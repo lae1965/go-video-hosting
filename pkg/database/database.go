@@ -1,6 +1,7 @@
 package database
 
 import (
+	"database/sql"
 	"go-video-hosting/pkg/model"
 	"os"
 
@@ -9,17 +10,29 @@ import (
 )
 
 type Users interface {
-	CreateUser(user model.Users) (int, error)
+	CreateUser(transaction *sql.Tx, user model.Users) (int, error)
+}
+
+type Token interface {
+	CreateToken(transaction *sql.Tx, token model.Token) (int, error)
 }
 
 type Database struct {
 	Users
+	Token
+	dbSql *sqlx.DB
 }
 
-func NewDatabase(db *sqlx.DB) *Database {
+func NewDatabase(dbSql *sqlx.DB) *Database {
 	return &Database{
-		Users: NewUserPostgres(db),
+		Users: NewUserPostgres(dbSql),
+		Token: NewTokenPostgres(dbSql),
+		dbSql: dbSql,
 	}
+}
+
+func (db *Database) BeginTransaction() (*sql.Tx, error) {
+	return db.dbSql.Begin()
 }
 
 func Connection() (*sqlx.DB, error) {

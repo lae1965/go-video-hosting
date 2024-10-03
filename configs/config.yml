@@ -1,3 +1,4 @@
+host: localhost
 port: 8080
 db:
   host: localhost
@@ -5,3 +6,7 @@ db:
   username: postgres
   dbname: go_video_hosting
   sslmode: disable
+mail:
+  host: smtp.mail.ru
+  port: 25
+  from: yo-tube@mail.ru

@@ -1,21 +1,22 @@
 package database
 
 import (
+	"database/sql"
 	"go-video-hosting/pkg/model"
 
 	"github.com/jmoiron/sqlx"
 )
 
 type UserPosrgres struct {
-	db *sqlx.DB
+	dbSql *sqlx.DB
 }
 
-func NewUserPostgres(db *sqlx.DB) *UserPosrgres {
-	return &UserPosrgres{db: db}
+func NewUserPostgres(dbSql *sqlx.DB) *UserPosrgres {
+	return &UserPosrgres{dbSql: dbSql}
 }
 
-func (userPostgres *UserPosrgres) CreateUser(user model.Users) (int, error) {
-	row := userPostgres.db.QueryRow(
+func (userPostgres *UserPosrgres) CreateUser(transaction *sql.Tx, user model.Users) (int, error) {
+	row := transaction.QueryRow(
 		"INSERT INTO USERS (nickName, email, passwordHash) values ($1, $2, $3) RETURNING id",
 		user.NickName, user.Email, user.Password,
 	)
