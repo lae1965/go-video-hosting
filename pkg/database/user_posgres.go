@@ -16,14 +16,22 @@ func NewUserPostgres(dbSql *sqlx.DB) *UserPosrgres {
 }
 
 func (userPostgres *UserPosrgres) CreateUser(transaction *sql.Tx, user model.Users) (int, error) {
-	row := transaction.QueryRow(
-		"INSERT INTO USERS (nickName, email, passwordHash) values ($1, $2, $3) RETURNING id",
-		user.NickName, user.Email, user.Password,
-	)
+	query := "INSERT INTO USERS (nickName, email, password, activateLink) values ($1, $2, $3, $4) RETURNING id"
+
+	row := transaction.QueryRow(query, user.NickName, user.Email, user.Password, user.ActivateLink)
 
 	var id int
 	if err := row.Scan(&id); err != nil {
 		return 0, err
 	}
 	return id, nil
+}
+
+func (userPosrgres *UserPosrgres) GetUserByEmail(email string) (model.Users, error) {
+	query := "SELECT * FROM USERS WHERE email=$1"
+
+	var user model.Users
+	err := userPosrgres.dbSql.Get(&user, query, email)
+
+	return user, err
 }

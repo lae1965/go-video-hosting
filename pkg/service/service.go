@@ -7,7 +7,8 @@ import (
 )
 
 type Users interface {
-	CreateUser(user model.Users) (*model.UserResponse, error)
+	CreateUser(user model.Users) (*model.UserCreateResponse, error)
+	Login(user model.Users) (*model.UserResponse, error)
 }
 
 type Token interface {

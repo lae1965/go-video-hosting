@@ -1,7 +1,6 @@
 package service
 
 import (
-	"crypto/sha1"
 	"database/sql"
 	"fmt"
 	"go-video-hosting/pkg/database"
@@ -13,6 +12,7 @@ import (
 	"github.com/go-gomail/gomail"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type CallbackFunc func() (*sql.Tx, error)
@@ -31,7 +31,7 @@ func NewUserService(dbUser database.Users, token Token, CreateTransaction Callba
 	}
 }
 
-func (userService *UserService) CreateUser(user model.Users) (*model.UserResponse, error) {
+func (userService *UserService) CreateUser(user model.Users) (*model.UserCreateResponse, error) {
 	transaction, err := userService.createTransaction()
 	if err != nil {
 		return nil, err
@@ -45,7 +45,11 @@ func (userService *UserService) CreateUser(user model.Users) (*model.UserRespons
 		}
 	}()
 
-	user.Password = userService.GenerateHashPassword(user.Password)
+	hash, err := userService.GenerateHashPassword(user.Password)
+	if err != nil {
+		return nil, fmt.Errorf("error hashing password: %s", err.Error())
+	}
+	user.Password = hash
 	user.ActivateLink = uuid.New().String()
 
 	userId, err := userService.dbUser.CreateUser(transaction, user)
@@ -65,7 +69,7 @@ func (userService *UserService) CreateUser(user model.Users) (*model.UserRespons
 		return nil, fmt.Errorf("error sending email message: %s", err.Error())
 	}
 
-	return &model.UserResponse{
+	return &model.UserCreateResponse{
 		TokenResponse: tokenResponse,
 		UserId:        userId,
 	}, nil
@@ -92,9 +96,29 @@ func SendMail(email string, activateLink string) error {
 	return nil
 }
 
-func (userService *UserService) GenerateHashPassword(password string) string {
-	hash := sha1.New()
-	hash.Write([]byte(password))
+func (userService *UserService) GenerateHashPassword(password string) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	return string(hash), err
+}
 
-	return fmt.Sprintf("%x", hash.Sum([]byte(os.Getenv("SALT"))))
+func (userService *UserService) Login(user model.Users) (*model.UserResponse, error) {
+	newUser, err := userService.dbUser.GetUserByEmail(user.Email)
+	if err != nil {
+		return nil, fmt.Errorf("user with email %s not found: %s", user.Email, err.Error())
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(newUser.Password), []byte(user.Password))
+	if err != nil {
+		return nil, fmt.Errorf("wrong password: %s", err.Error())
+	}
+
+	tokenResponse, err := userService.token.CreateTokens(nil, newUser)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.UserResponse{
+		TokenResponse: tokenResponse,
+		Users:         &newUser,
+	}, nil
 }

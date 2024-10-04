@@ -20,7 +20,7 @@ func main() {
 		logrus.Fatalf("Error initialization config: %s", err.Error())
 	}
 
-	envVars := []string{"DB_PASSWORD", "SALT", "ACCESS_KEY", "REFRESH_KEY", "MAIL_PASSWORD"}
+	envVars := []string{"DB_PASSWORD", "ACCESS_KEY", "REFRESH_KEY", "MAIL_PASSWORD"}
 	for _, envVar := range envVars {
 		if os.Getenv(envVar) == "" {
 			logrus.Fatalf("Requied environment variable %s is not set", envVar)

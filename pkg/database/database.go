@@ -11,6 +11,7 @@ import (
 
 type Users interface {
 	CreateUser(transaction *sql.Tx, user model.Users) (int, error)
+	GetUserByEmail(email string) (model.Users, error)
 }
 
 type Token interface {
