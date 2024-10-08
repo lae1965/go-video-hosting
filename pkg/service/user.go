@@ -59,7 +59,7 @@ func (userService *UserService) CreateUser(user model.Users) (*model.UserCreateR
 
 	user.Id = userId
 
-	tokenResponse, err := userService.token.CreateTokens(transaction, user)
+	tokenResponse, err := userService.token.CreateTokens(transaction, user, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -112,13 +112,55 @@ func (userService *UserService) Login(user model.Users) (*model.UserResponse, er
 		return nil, fmt.Errorf("wrong password: %s", err.Error())
 	}
 
-	tokenResponse, err := userService.token.CreateTokens(nil, newUser)
+	tokenResponse, err := userService.token.CreateTokens(nil, *newUser, 0)
 	if err != nil {
 		return nil, err
 	}
 
 	return &model.UserResponse{
 		TokenResponse: tokenResponse,
-		Users:         &newUser,
+		Users:         newUser,
+	}, nil
+}
+
+func (userService *UserService) Logout(refreshTokenId int) error {
+	err := userService.token.RemoveToken(refreshTokenId)
+
+	if err != nil {
+		return fmt.Errorf("error removing token: %s", err.Error())
+	}
+
+	return nil
+}
+
+func (userService *UserService) Refresh(refreshToken string) (*model.UserResponse, error) {
+	userId, err := userService.token.ValidateToken(refreshToken, os.Getenv("REFRESH_KEY"))
+	if err != nil {
+		return nil, err
+	}
+
+	refreshTokenId, err := userService.token.GetTokenIdByToken(refreshToken)
+	if err != nil {
+		return nil, fmt.Errorf("refreshtoken is not found in DB: %s", err.Error())
+	}
+
+	userFromDB, err := userService.dbUser.GetUserById(userId)
+	if err != nil {
+		return nil, fmt.Errorf("user with such refreshtoken is not exist: %s", err.Error())
+	}
+
+	tokenResponse, err := userService.token.CreateTokens(nil, *userFromDB, refreshTokenId)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.UserResponse{
+		TokenResponse: tokenResponse,
+		Users: &model.Users{
+			Id:       userId,
+			NickName: userFromDB.NickName,
+			IsBanned: userFromDB.IsBanned,
+			Role:     userFromDB.Role,
+		},
 	}, nil
 }

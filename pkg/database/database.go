@@ -11,11 +11,15 @@ import (
 
 type Users interface {
 	CreateUser(transaction *sql.Tx, user model.Users) (int, error)
-	GetUserByEmail(email string) (model.Users, error)
+	GetUserByEmail(email string) (*model.Users, error)
+	GetUserById(id int) (*model.Users, error)
 }
 
 type Token interface {
 	CreateToken(transaction *sql.Tx, token model.Token) (int, error)
+	UpdateToken(tokenId int, token string) error
+	RemoveToken(tokenId int) error
+	GetTokenIdByToken(token string) (int, error)
 }
 
 type Database struct {

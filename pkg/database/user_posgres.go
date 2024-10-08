@@ -27,11 +27,26 @@ func (userPostgres *UserPosrgres) CreateUser(transaction *sql.Tx, user model.Use
 	return id, nil
 }
 
-func (userPosrgres *UserPosrgres) GetUserByEmail(email string) (model.Users, error) {
+func (userPosrgres *UserPosrgres) GetUserByEmail(email string) (*model.Users, error) {
 	query := "SELECT * FROM USERS WHERE email=$1"
 
 	var user model.Users
-	err := userPosrgres.dbSql.Get(&user, query, email)
+	if err := userPosrgres.dbSql.Get(&user, query, email); err != nil {
+		return nil, err
+	}
 
-	return user, err
+	return &user, nil
+}
+
+func (userPosrgres *UserPosrgres) GetUserById(id int) (*model.Users, error) {
+	query := "SELECT id, nickName, email, role FROM USERS WHERE id=$1"
+
+	row := userPosrgres.dbSql.QueryRow(query, id)
+
+	var user model.Users
+	if err := row.Scan(&user.Id, &user.NickName, &user.Email, &user.Role); err != nil {
+		return nil, err
+	}
+
+	return &user, nil
 }

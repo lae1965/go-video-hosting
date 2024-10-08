@@ -9,10 +9,15 @@ import (
 type Users interface {
 	CreateUser(user model.Users) (*model.UserCreateResponse, error)
 	Login(user model.Users) (*model.UserResponse, error)
+	Logout(refreshTokenId int) error
+	Refresh(refreshToken string) (*model.UserResponse, error)
 }
 
 type Token interface {
-	CreateTokens(transaction *sql.Tx, user model.Users) (*model.TokenResponse, error)
+	CreateTokens(transaction *sql.Tx, user model.Users, refreshTokenId int) (*model.TokenResponse, error)
+	RemoveToken(tokenId int) error
+	ValidateToken(tokenString string, tokenKey string) (int, error)
+	GetTokenIdByToken(token string) (int, error)
 }
 
 type Service struct {
