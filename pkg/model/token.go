@@ -5,3 +5,9 @@ type Token struct {
 	Token  string `json:"token"`
 	UserId int    `json:"userId"`
 }
+
+type TokenResponse struct {
+	AccessToken    string
+	RefreshToken   string
+	RefreshTokenId int
+}
