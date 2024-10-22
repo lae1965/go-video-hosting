@@ -20,21 +20,21 @@ func main() {
 		logrus.Fatalf("Error initialization config: %s", err.Error())
 	}
 
-	envVars := []string{"DB_PASSWORD", "SALT"}
+	envVars := []string{"DB_PASSWORD", "ACCESS_KEY", "REFRESH_KEY", "MAIL_PASSWORD"}
 	for _, envVar := range envVars {
 		if os.Getenv(envVar) == "" {
 			logrus.Fatalf("Requied environment variable %s is not set", envVar)
 		}
 	}
 
-	db, err := database.Connection()
+	dbSql, err := database.Connection()
 	if err != nil {
 		logrus.Fatalf("Failed to installation db: %s", err.Error())
 	}
 
 	validate := validator.NewValidator()
-	repo := database.NewDatabase(db)
-	service := service.NewService(repo)
+	db := database.NewDatabase(dbSql)
+	service := service.NewService(db)
 	handlers := handler.NewHandler(service, validate)
 	srv := new(server.Server)
 
