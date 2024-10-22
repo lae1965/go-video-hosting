@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "gRPC/proto;proto";
+
+service FilesService {
+  rpc SendToGRPCServer (stream FileSendRequest) returns (FileSendResponse);
+  rpc DeleteFromGRPCServer (FileDeleteRequest) returns (FileDeleteResponse);
+  rpc GetFromGRPCServer (FileGetRequest) returns (stream FileGetResponse);
+}
+
+enum Status {
+  SUCCESS = 0;
+  FAILED = 1;
+}
+
+message FileSendRequest {
+  oneof request {
+    string fileName = 1;
+    bytes chunk = 2;
+  }
+}
+
+message FileSendResponse {
+  string newFileName = 1;
+  Status status = 2;
+}
+
+message FileDeleteRequest {
+  string fileName = 1;
+}
+
+message FileDeleteResponse {
+  Status status = 1;
+}
+
+message FileGetRequest {
+  string fileName = 1;
+  int64 start = 2;
+  int64 end = 3;
+}
+
+message FileGetResponse {
+  oneof response {
+    int64 fileSize = 1;
+    bytes fileStream = 2;
+    bool isError = 3;
+  }
+}
+
