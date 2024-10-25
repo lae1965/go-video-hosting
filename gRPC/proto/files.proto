@@ -24,16 +24,13 @@ message FileSendRequest {
 
 message FileSendResponse {
   string newFileName = 1;
-  Status status = 2;
 }
 
 message FileDeleteRequest {
   string fileName = 1;
 }
 
-message FileDeleteResponse {
-  Status status = 1;
-}
+message FileDeleteResponse {}
 
 message FileGetRequest {
   string fileName = 1;
@@ -45,7 +42,6 @@ message FileGetResponse {
   oneof response {
     int64 fileSize = 1;
     bytes fileStream = 2;
-    bool isError = 3;
   }
 }
 

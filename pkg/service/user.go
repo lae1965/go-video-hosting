@@ -1,8 +1,10 @@
 package service
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
+	grpcclient "go-video-hosting/gRPC/client"
 	"go-video-hosting/pkg/database"
 	"go-video-hosting/pkg/model"
 
@@ -20,13 +22,15 @@ type CallbackFunc func() (*sql.Tx, error)
 type UserService struct {
 	dbUser            database.Users
 	token             Token
+	grpcClient        grpcclient.FilesGRPCClient
 	createTransaction CallbackFunc
 }
 
-func NewUserService(dbUser database.Users, token Token, CreateTransaction CallbackFunc) *UserService {
+func NewUserService(dbUser database.Users, token Token, CreateTransaction CallbackFunc, grpcClient grpcclient.FilesGRPCClient) *UserService {
 	return &UserService{
 		dbUser:            dbUser,
 		token:             token,
+		grpcClient:        grpcClient,
 		createTransaction: CreateTransaction,
 	}
 }
@@ -163,4 +167,64 @@ func (userService *UserService) Refresh(refreshToken string) (*model.UserRespons
 			Role:     userFromDB.Role,
 		},
 	}, nil
+}
+
+func (userService *UserService) SaveAvatar(id int, fileName string) error {
+	oldFileName, err := userService.dbUser.GetAvatarById(id)
+
+	if err != nil {
+		return fmt.Errorf("can't get avatarFileName: %s", err.Error())
+	}
+
+	newFileName, err := userService.grpcClient.SendToGRPCServer(context.Background(), fileName)
+	if err != nil {
+		return fmt.Errorf("can't save file to gRPC-server: %s", err.Error())
+	}
+
+	if err := userService.dbUser.UpdateAvatar(id, newFileName); err != nil {
+		userService.grpcClient.DeleteFromGRPCServer(context.Background(), newFileName)
+		return fmt.Errorf("can't save fileName to database: %s", err.Error())
+	}
+
+	if oldFileName != "" {
+		userService.grpcClient.DeleteFromGRPCServer(context.Background(), oldFileName)
+	}
+
+	return nil
+}
+
+func (userService *UserService) GetAvatar(id int, sendChunk func(int64, string, []byte) error) error {
+	avatarFileName, err := userService.dbUser.GetAvatarById(id)
+	if err != nil {
+		return fmt.Errorf("can't get avatarFileName: %s", err.Error())
+	}
+
+	if avatarFileName == "" {
+		return fmt.Errorf("this user has no avatar")
+	}
+
+	if err := userService.grpcClient.GetFromGRPCServer(context.Background(), avatarFileName, sendChunk); err != nil {
+		return fmt.Errorf("can't get avatar: %s", err.Error())
+	}
+
+	return nil
+}
+
+func (userService *UserService) DeleteAvatar(id int) error {
+	avatarFileName, err := userService.dbUser.GetAvatarById(id)
+	if err != nil {
+		return fmt.Errorf("can't get avatarFileName: %s", err.Error())
+	}
+
+	if avatarFileName == "" {
+		return fmt.Errorf("this user has no avatar")
+	}
+
+	if err := userService.grpcClient.DeleteFromGRPCServer(context.Background(), avatarFileName); err != nil {
+		return fmt.Errorf("can't delete avatar from gRPC-server: %s", err.Error())
+	}
+
+	userService.dbUser.UpdateAvatar(id, "")
+
+	return nil
 }

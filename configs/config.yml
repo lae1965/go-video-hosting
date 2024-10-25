@@ -13,3 +13,4 @@ mail:
 gRPC:
   host: localhost
   port: 8081
+  chunksize: 1024

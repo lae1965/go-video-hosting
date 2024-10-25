@@ -50,3 +50,27 @@ func (userPosrgres *UserPosrgres) GetUserById(id int) (*model.Users, error) {
 
 	return &user, nil
 }
+
+func (userPosrgres *UserPosrgres) GetAvatarById(id int) (string, error) {
+	query := "SELECT avatar FROM USERS WHERE id=$1"
+
+	row := userPosrgres.dbSql.QueryRow(query, id)
+
+	var avatar string
+	if err := row.Scan(&avatar); err != nil {
+		if err == sql.ErrNoRows {
+			return "", nil
+		}
+		return "", err
+	}
+
+	return avatar, nil
+}
+
+func (userPosrgres *UserPosrgres) UpdateAvatar(id int, avatarFileName string) error {
+	query := "UPDATE USERS SET avatar = $1 WHERE id = $2"
+
+	_, err := userPosrgres.dbSql.Exec(query, avatarFileName, id)
+
+	return err
+}

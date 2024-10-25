@@ -97,33 +97,25 @@ func (s *FilesGRPCService) SendToGRPCServer(stream proto.FilesService_SendToGRPC
 		file.Close()
 	}
 
-	status := proto.Status_SUCCESS
+	if err := stream.SendAndClose(&proto.FileSendResponse{
+		NewFileName: fileName,
+	}); err != nil {
+		responseError = status.Errorf(codes.Internal, "failed to close stream: %s", err.Error())
+	}
+
 	if responseError != nil {
 		logrus.Printf("%s", responseError.Error())
-		status = proto.Status_FAILED
 	}
 
-	return stream.SendAndClose(&proto.FileSendResponse{
-		NewFileName: fileName,
-		Status:      status,
-	})
+	return responseError
 }
 
-func (s *FilesGRPCService) DeleteFromGRPCServer(ctx context.Context, request *proto.FileDeleteRequest) (*proto.FileDeleteResponse, error) {
-	status := proto.Status_SUCCESS
-
-	err := os.Remove(getFullFileName(request.GetFileName()))
-	if err != nil {
-		status = proto.Status_FAILED
-	}
-
-	return &proto.FileDeleteResponse{
-		Status: status,
-	}, err
+func (s *FilesGRPCService) DeleteFromGRPCServer(ctx context.Context, request *proto.FileDeleteRequest) error {
+	return os.Remove(getFullFileName(request.GetFileName()))
 }
 
 func (s *FilesGRPCService) GetFromGRPCServer(req *proto.FileGetRequest, stream proto.FilesService_GetFromGRPCServerServer) error {
-	file, err := os.Open(req.GetFileName())
+	file, err := os.Open(getFullFileName(req.GetFileName()))
 	if err != nil {
 		return status.Errorf(codes.Internal, "failed to open file: %s", err.Error())
 	}

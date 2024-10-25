@@ -8,6 +8,7 @@ CREATE TABLE USERS (
   firstName VARCHAR(64) DEFAULT '',
   lastName VARCHAR(64) DEFAULT '',
   birthDate DATE,
+  avatar VARCHAR(64) DEFAULT '',
   role ROLE DEFAULT 'userRole',
   activateLink VARCHAR(64)  DEFAULT '',
   isActivate BOOLEAN DEFAULT false,

@@ -13,6 +13,8 @@ type Users interface {
 	CreateUser(transaction *sql.Tx, user model.Users) (int, error)
 	GetUserByEmail(email string) (*model.Users, error)
 	GetUserById(id int) (*model.Users, error)
+	GetAvatarById(id int) (string, error)
+	UpdateAvatar(id int, avatarFileName string) error
 }
 
 type Token interface {

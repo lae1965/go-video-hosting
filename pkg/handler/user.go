@@ -142,15 +142,86 @@ func (handler *Handler) findAll(ctx *gin.Context) {
 }
 
 func (handler *Handler) saveAvatar(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	if err := handler.validators.Validate.Var(idStr, "required,numeric,min=1"); err != nil {
+		newErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
 
+	id, err := strconv.ParseInt(idStr, 10, 0)
+	if err != nil {
+		newErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	file, err := ctx.FormFile("file")
+	if err != nil {
+		newErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := handler.validators.Validate.Var(file, "avatar"); err != nil {
+		newErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := handler.services.SaveAvatar(int(id), file.Filename); err != nil {
+		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Avatar was saved successfully"})
 }
 
 func (handler *Handler) getAvatar(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	if err := handler.validators.Validate.Var(idStr, "required,numeric,min=1"); err != nil {
+		newErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
 
+	id, err := strconv.ParseInt(idStr, 10, 0)
+	if err != nil {
+		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	isHeadersSet := false
+	err = handler.services.GetAvatar(int(id), func(fileSize int64, mimeType string, chunk []byte) error {
+		if !isHeadersSet {
+			ctx.Writer.Header().Set("Content-Length", fmt.Sprintf("%d", fileSize))
+			ctx.Writer.Header().Set("Content-Type", mimeType)
+			ctx.Writer.WriteHeader(http.StatusOK)
+			isHeadersSet = true
+		}
+		_, err := ctx.Writer.Write(chunk)
+		return err
+	})
+
+	if err != nil {
+		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
+	}
 }
 
 func (handler *Handler) deleteAvatar(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	if err := handler.validators.Validate.Var(idStr, "required,numeric,min=1"); err != nil {
+		newErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
 
+	id, err := strconv.ParseInt(idStr, 10, 0)
+	if err != nil {
+		newErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := handler.services.DeleteAvatar(int(id)); err != nil {
+		newErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	ctx.JSON(http.StatusNoContent, gin.H{"message": "Avatar was saved successfully"})
 }
 
 func (handler *Handler) checkPassword(ctx *gin.Context) {

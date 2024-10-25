@@ -2,6 +2,7 @@ package service
 
 import (
 	"database/sql"
+	"go-video-hosting/gRPC/client"
 	"go-video-hosting/pkg/database"
 	"go-video-hosting/pkg/model"
 )
@@ -11,6 +12,9 @@ type Users interface {
 	Login(user model.Users) (*model.UserResponse, error)
 	Logout(refreshTokenId int) error
 	Refresh(refreshToken string) (*model.UserResponse, error)
+	SaveAvatar(id int, fileName string) error
+	GetAvatar(id int, sendChunk func(int64, string, []byte) error) error
+	DeleteAvatar(id int) error
 }
 
 type Token interface {
@@ -25,9 +29,9 @@ type Service struct {
 	Token
 }
 
-func NewService(db *database.Database) *Service {
+func NewService(db *database.Database, grpcClient grpcclient.FilesGRPCClient) *Service {
 	return &Service{
-		Users: NewUserService(db.Users, NewTokenService(db.Token), db.BeginTransaction),
+		Users: NewUserService(db.Users, NewTokenService(db.Token), db.BeginTransaction, grpcClient),
 		Token: NewTokenService(db.Token),
 	}
 }
