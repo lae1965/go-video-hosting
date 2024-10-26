@@ -21,14 +21,18 @@ func (handler *Handler) InitRoutes() *gin.Engine {
 
 	api := router.Group("api")
 	{
-		user := api.Group("/user")
+		userPublic := api.Group("/user")
 		{
-			user.POST("/registration", handler.registration) //! Done
-			user.POST("/login", handler.login)               //! Done
-			user.POST("/logout", handler.logout)             //! Done
+			userPublic.POST("/registration", handler.registration) //! Done
+			userPublic.POST("/login", handler.login)               //! Done
+			userPublic.GET("/refresh", handler.refresh)            //! Done
+		}
+
+		user := api.Group("/user", handler.AuthMiddleware)
+		{
+			user.POST("/logout", handler.logout) //! Done
 			user.PATCH("/edit/:id", handler.editUser)
 			user.DELETE("/:id", handler.deleteUser)
-			user.GET("/refresh", handler.refresh) //! Done
 			user.GET("/activate/:link", handler.activate)
 			user.GET("/find_min/:id", handler.findMin)
 			user.GET("/find/:id", handler.find)
