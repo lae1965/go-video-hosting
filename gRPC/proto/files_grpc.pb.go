@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -29,7 +30,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type FilesServiceClient interface {
 	SendToGRPCServer(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[FileSendRequest, FileSendResponse], error)
-	DeleteFromGRPCServer(ctx context.Context, in *FileDeleteRequest, opts ...grpc.CallOption) (*FileDeleteResponse, error)
+	DeleteFromGRPCServer(ctx context.Context, in *FileDeleteRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	GetFromGRPCServer(ctx context.Context, in *FileGetRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[FileGetResponse], error)
 }
 
@@ -54,9 +55,9 @@ func (c *filesServiceClient) SendToGRPCServer(ctx context.Context, opts ...grpc.
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type FilesService_SendToGRPCServerClient = grpc.ClientStreamingClient[FileSendRequest, FileSendResponse]
 
-func (c *filesServiceClient) DeleteFromGRPCServer(ctx context.Context, in *FileDeleteRequest, opts ...grpc.CallOption) (*FileDeleteResponse, error) {
+func (c *filesServiceClient) DeleteFromGRPCServer(ctx context.Context, in *FileDeleteRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(FileDeleteResponse)
+	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, FilesService_DeleteFromGRPCServer_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -88,7 +89,7 @@ type FilesService_GetFromGRPCServerClient = grpc.ServerStreamingClient[FileGetRe
 // for forward compatibility.
 type FilesServiceServer interface {
 	SendToGRPCServer(grpc.ClientStreamingServer[FileSendRequest, FileSendResponse]) error
-	DeleteFromGRPCServer(context.Context, *FileDeleteRequest) (*FileDeleteResponse, error)
+	DeleteFromGRPCServer(context.Context, *FileDeleteRequest) (*emptypb.Empty, error)
 	GetFromGRPCServer(*FileGetRequest, grpc.ServerStreamingServer[FileGetResponse]) error
 	mustEmbedUnimplementedFilesServiceServer()
 }
@@ -103,7 +104,7 @@ type UnimplementedFilesServiceServer struct{}
 func (UnimplementedFilesServiceServer) SendToGRPCServer(grpc.ClientStreamingServer[FileSendRequest, FileSendResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method SendToGRPCServer not implemented")
 }
-func (UnimplementedFilesServiceServer) DeleteFromGRPCServer(context.Context, *FileDeleteRequest) (*FileDeleteResponse, error) {
+func (UnimplementedFilesServiceServer) DeleteFromGRPCServer(context.Context, *FileDeleteRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteFromGRPCServer not implemented")
 }
 func (UnimplementedFilesServiceServer) GetFromGRPCServer(*FileGetRequest, grpc.ServerStreamingServer[FileGetResponse]) error {

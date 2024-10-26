@@ -175,6 +175,7 @@ func (handler *Handler) saveAvatar(ctx *gin.Context) {
 
 func (handler *Handler) getAvatar(ctx *gin.Context) {
 	idStr := ctx.Param("id")
+
 	if err := handler.validators.Validate.Var(idStr, "required,numeric,min=1"); err != nil {
 		newErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return

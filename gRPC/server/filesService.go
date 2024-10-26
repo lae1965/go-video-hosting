@@ -13,6 +13,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type FilesGRPCService struct {
@@ -110,8 +111,10 @@ func (s *FilesGRPCService) SendToGRPCServer(stream proto.FilesService_SendToGRPC
 	return responseError
 }
 
-func (s *FilesGRPCService) DeleteFromGRPCServer(ctx context.Context, request *proto.FileDeleteRequest) error {
-	return os.Remove(getFullFileName(request.GetFileName()))
+func (s *FilesGRPCService) DeleteFromGRPCServer(ctx context.Context, request *proto.FileDeleteRequest) (*emptypb.Empty, error) {
+	err := os.Remove(getFullFileName(request.GetFileName()))
+
+	return &emptypb.Empty{}, err
 }
 
 func (s *FilesGRPCService) GetFromGRPCServer(req *proto.FileGetRequest, stream proto.FilesService_GetFromGRPCServerServer) error {

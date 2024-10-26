@@ -4,15 +4,12 @@ package proto;
 
 option go_package = "gRPC/proto;proto";
 
+import "google/protobuf/empty.proto";
+
 service FilesService {
   rpc SendToGRPCServer (stream FileSendRequest) returns (FileSendResponse);
-  rpc DeleteFromGRPCServer (FileDeleteRequest) returns (FileDeleteResponse);
+  rpc DeleteFromGRPCServer (FileDeleteRequest) returns (google.protobuf.Empty);
   rpc GetFromGRPCServer (FileGetRequest) returns (stream FileGetResponse);
-}
-
-enum Status {
-  SUCCESS = 0;
-  FAILED = 1;
 }
 
 message FileSendRequest {
@@ -29,8 +26,6 @@ message FileSendResponse {
 message FileDeleteRequest {
   string fileName = 1;
 }
-
-message FileDeleteResponse {}
 
 message FileGetRequest {
   string fileName = 1;
