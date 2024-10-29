@@ -90,7 +90,7 @@ func (client *FilesGRPCClient) DeleteFromGRPCServer(ctx context.Context, fileNam
 	return err
 }
 
-func (client *FilesGRPCClient) GetFromGRPCServer(ctx context.Context, fileName string, sendChank func(int64, string, []byte) error) error {
+func (client *FilesGRPCClient) GetFromGRPCServer(ctx context.Context, fileName string, sendChunk func(int64, string, []byte) error) error {
 	var fileSize int64
 	mimeType := mime.TypeByExtension(filepath.Ext(fileName))
 
@@ -118,9 +118,8 @@ func (client *FilesGRPCClient) GetFromGRPCServer(ctx context.Context, fileName s
 		if size := response.GetFileSize(); size > 0 {
 			fileSize = size
 		} else if fileSrteam := response.GetFileStream(); fileSrteam != nil {
-			sendChank(fileSize, mimeType, fileSrteam)
+			sendChunk(fileSize, mimeType, fileSrteam)
 		}
-
 	}
 
 	return nil

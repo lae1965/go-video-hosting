@@ -23,25 +23,25 @@ func (handler *Handler) InitRoutes() *gin.Engine {
 	{
 		userPublic := api.Group("/user")
 		{
-			userPublic.POST("/registration", handler.registration) //! Done
-			userPublic.POST("/login", handler.login)               //! Done
-			userPublic.GET("/refresh", handler.refresh)            //! Done
+			userPublic.POST("/registration", handler.registration)
+			userPublic.POST("/login", handler.login)
+			userPublic.GET("/refresh", handler.refresh)
 		}
 
 		user := api.Group("/user", handler.AuthMiddleware)
 		{
-			user.POST("/logout", handler.logout) //! Done
-			user.PATCH("/edit/:id", handler.editUser)
-			user.DELETE("/:id", handler.deleteUser)
-			user.GET("/activate/:link", handler.activate)
-			user.GET("/find_min/:id", handler.findMin)
-			user.GET("/find/:id", handler.find)
-			user.GET("/", handler.findAll)
-			user.POST("/avatar/:id", handler.saveAvatar)     //! Done
-			user.GET("/avatar/:id", handler.getAvatar)       //! Done
-			user.DELETE("/avatar/:id", handler.deleteAvatar) //! Done
-			user.GET("/check", handler.checkPassword)
-			user.PATCH("/change_password", handler.changePassword)
+			user.POST("/logout", handler.logout)
+			user.PATCH("/edit/:id", handler.editUser)     // TODO
+			user.DELETE("/:id", handler.deleteUser)       // TODO
+			user.GET("/activate/:link", handler.activate) // TODO
+			user.GET("/find_min/:id", handler.findMin)    // TODO
+			user.GET("/find/:id", handler.find)           // TODO
+			user.GET("/", handler.findAll)                // TODO
+			user.POST("/avatar/:id", handler.saveAvatar)
+			user.GET("/avatar/:id", handler.getAvatar)
+			user.DELETE("/avatar/:id", handler.deleteAvatar)
+			user.GET("/check", handler.checkPassword)              // TODO
+			user.PATCH("/change_password", handler.changePassword) // TODO
 		}
 	}
 

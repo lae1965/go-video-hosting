@@ -6,6 +6,8 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+const UniqueViolation = "23505" // ошибка SQL - нарушение уникальности
+
 type Config struct {
 	Host     string
 	Port     string
