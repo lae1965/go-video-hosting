@@ -24,6 +24,7 @@ type Users struct {
 	FirstName       string       `json:"firstName"`
 	LastName        string       `json:"lastName"`
 	BirthDate       sql.NullTime `json:"birthDate"`
+	Avatar          string       `json:"avatar"`
 	Role            Role         `json:"role"`
 	ActivateLink    string       `json:"activateLink"`
 	IsActivate      bool         `json:"isActivate"`

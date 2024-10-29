@@ -21,23 +21,27 @@ func (handler *Handler) InitRoutes() *gin.Engine {
 
 	api := router.Group("api")
 	{
-		user := api.Group("/user")
+		userPublic := api.Group("/user")
 		{
-			user.POST("/registration", handler.registration)
-			user.POST("/login", handler.login)
+			userPublic.POST("/registration", handler.registration)
+			userPublic.POST("/login", handler.login)
+			userPublic.GET("/refresh", handler.refresh)
+		}
+
+		user := api.Group("/user", handler.AuthMiddleware)
+		{
 			user.POST("/logout", handler.logout)
-			user.PATCH("/edit/:id", handler.editUser)
-			user.DELETE("/:id", handler.deleteUser)
-			user.GET("/refresh", handler.refresh)
-			user.GET("/activate/:link", handler.activate)
-			user.GET("/find_min/:id", handler.findMin)
-			user.GET("/find/:id", handler.find)
-			user.GET("/", handler.findAll)
+			user.PATCH("/edit/:id", handler.editUser)     // TODO
+			user.DELETE("/:id", handler.deleteUser)       // TODO
+			user.GET("/activate/:link", handler.activate) // TODO
+			user.GET("/find_min/:id", handler.findMin)    // TODO
+			user.GET("/find/:id", handler.find)           // TODO
+			user.GET("/", handler.findAll)                // TODO
 			user.POST("/avatar/:id", handler.saveAvatar)
 			user.GET("/avatar/:id", handler.getAvatar)
 			user.DELETE("/avatar/:id", handler.deleteAvatar)
-			user.GET("/check", handler.checkPassword)
-			user.PATCH("/change_password", handler.changePassword)
+			user.GET("/check", handler.checkPassword)              // TODO
+			user.PATCH("/change_password", handler.changePassword) // TODO
 		}
 	}
 

@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"go-video-hosting/internal/errors"
 	"go-video-hosting/pkg/model"
 	"os"
 
@@ -10,9 +11,11 @@ import (
 )
 
 type Users interface {
-	CreateUser(transaction *sql.Tx, user model.Users) (int, error)
+	CreateUser(transaction *sql.Tx, user model.Users) (int, *errors.ErrorRes)
 	GetUserByEmail(email string) (*model.Users, error)
 	GetUserById(id int) (*model.Users, error)
+	GetAvatarByUserId(userId int) (string, *errors.ErrorRes)
+	UpdateAvatar(id int, avatarFileName string) *errors.ErrorRes
 }
 
 type Token interface {

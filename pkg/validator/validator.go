@@ -1,6 +1,9 @@
 package validator
 
 import (
+	"mime/multipart"
+	"path/filepath"
+	"strings"
 	"unicode"
 
 	"github.com/go-playground/validator/v10"
@@ -15,8 +18,11 @@ func NewValidator() *Validator {
 		Validate: validator.New(),
 	}
 	validator.Validate.RegisterValidation("password", PasswordValidator)
+	validator.Validate.RegisterValidation("avatar", AvatarValidator)
 	return validator
 }
+
+var fileExtentions = [7]string{".png", ".jpeg", ".jpg", ".svg", ".gif", ".webp", ".avif"}
 
 func PasswordValidator(fl validator.FieldLevel) bool {
 	password := fl.Field().String()
@@ -43,4 +49,17 @@ func PasswordValidator(fl validator.FieldLevel) bool {
 	}
 
 	return wasUpper && wasLower && digitsCount >= 2
+}
+
+func AvatarValidator(fl validator.FieldLevel) bool {
+	fileName := fl.Field().Interface().(*multipart.FileHeader).Filename
+	ext := strings.ToLower(filepath.Ext(fileName))
+
+	for _, extention := range fileExtentions {
+		if extention == ext {
+			return true
+		}
+	}
+
+	return false
 }

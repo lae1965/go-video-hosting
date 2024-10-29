@@ -10,3 +10,7 @@ mail:
   host: smtp.mail.ru
   port: 25
   from: yo-tube@mail.ru
+gRPC:
+  host: localhost
+  port: 8081
+  chunksize: 1024

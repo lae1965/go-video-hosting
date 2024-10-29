@@ -1,6 +1,7 @@
 package main
 
 import (
+	"go-video-hosting/gRPC/client"
 	"go-video-hosting/internal/server"
 	"go-video-hosting/pkg/database"
 	"go-video-hosting/pkg/handler"
@@ -32,9 +33,16 @@ func main() {
 		logrus.Fatalf("Failed to installation db: %s", err.Error())
 	}
 
+	grpcServer, err := grpcclient.NewFilesGRPCServer()
+	if err != nil {
+		logrus.Fatalf("Failed to connect to gRPC: %s", err.Error())
+	}
+	defer grpcServer.Connection.Close()
+
+	grpcClient := grpcclient.NewFilesGRPCClient(grpcServer)
 	validate := validator.NewValidator()
 	db := database.NewDatabase(dbSql)
-	service := service.NewService(db)
+	service := service.NewService(db, *grpcClient)
 	handlers := handler.NewHandler(service, validate)
 	srv := new(server.Server)
 
