@@ -237,3 +237,16 @@ func (userService *UserService) UpdateUser(id int, data map[string]interface{}) 
 func (userService *UserService) DeleteUser(id int) *errors.ErrorRes {
 	return userService.dbUser.DeleteUser(id)
 }
+
+func (userService *UserService) Activate(activateLink string) *errors.ErrorRes {
+	userId, err := userService.dbUser.FindUserByActivateLink(activateLink)
+	if err != nil {
+		return &errors.ErrorRes{Code: err.Code, Message: err.Message}
+	}
+
+	if err := userService.dbUser.UpdateUser(userId, map[string]interface{}{"isActivate": true}); err != nil {
+		return &errors.ErrorRes{Code: err.Code, Message: err.Message}
+	}
+
+	return nil
+}

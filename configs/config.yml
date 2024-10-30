@@ -14,3 +14,6 @@ gRPC:
   host: localhost
   port: 8081
   chunksize: 1024
+client:
+  host: localhost
+  port: 4200

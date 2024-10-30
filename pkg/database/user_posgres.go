@@ -121,3 +121,17 @@ func (userPosgres *UserPosrgres) DeleteUser(id int) *errors.ErrorRes {
 
 	return nil
 }
+
+func (userPosrgres *UserPosrgres) FindUserByActivateLink(activateLink string) (int, *errors.ErrorRes) {
+	query := "SELECT id FROM USERS WHERE activateLink = $1"
+
+	var id int
+	if err := userPosrgres.dbSql.Get(&id, query, activateLink); err != nil {
+		if err == sql.ErrNoRows {
+			return 0, &errors.ErrorRes{Code: http.StatusBadRequest, Message: fmt.Sprintf("user with Id = %d not exist", id)}
+		}
+		return 0, &errors.ErrorRes{Code: http.StatusInternalServerError, Message: err.Error()}
+	}
+
+	return id, nil
+}

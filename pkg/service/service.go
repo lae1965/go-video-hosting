@@ -18,6 +18,7 @@ type Users interface {
 	DeleteAvatar(id int) *errors.ErrorRes
 	UpdateUser(id int, data map[string]interface{}) *errors.ErrorRes
 	DeleteUser(id int) *errors.ErrorRes
+	Activate(activateLink string) *errors.ErrorRes
 }
 
 type Token interface {

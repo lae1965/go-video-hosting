@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
 )
 
 func (handler *Handler) registration(ctx *gin.Context) {
@@ -134,9 +135,20 @@ func (handler *Handler) editUser(ctx *gin.Context) {
 		return
 	}
 
-	var user map[string]interface{}
-	if err := ctx.BindJSON(&user); err != nil {
+	var jsonObject, user map[string]interface{}
+	if err := ctx.BindJSON(&jsonObject); err != nil {
 		errors.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if updatingObject, exists := jsonObject["updatingObject"]; exists {
+		var ok bool
+		if user, ok = updatingObject.(map[string]interface{}); !ok {
+			errors.NewErrorResponse(ctx, http.StatusBadRequest, "invalid updatingObject")
+			return
+		}
+	} else {
+		errors.NewErrorResponse(ctx, http.StatusBadRequest, `body must contain an object with the key "updatingObject". Data must be inside this object`)
 		return
 	}
 
@@ -177,13 +189,25 @@ func (handler *Handler) deleteUser(ctx *gin.Context) {
 
 	if err := handler.services.DeleteUser(int(id)); err != nil {
 		errors.NewErrorResponse(ctx, err.Code, err.Message)
+		return
 	}
 
 	ctx.JSON(http.StatusNoContent, gin.H{"message": "delete success"})
 }
 
 func (handler *Handler) activate(ctx *gin.Context) {
+	activateLink := ctx.Param("link")
+	if err := handler.validators.Validate.Var(activateLink, "required,url"); err != nil {
+		errors.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
 
+	if err := handler.services.Activate(activateLink); err != nil {
+		errors.NewErrorResponse(ctx, err.Code, err.Message)
+		return
+	}
+
+	ctx.Redirect(http.StatusOK, fmt.Sprintf("%s:%s/emailConfirm", viper.GetString("client.host"), viper.GetString("client.port")))
 }
 
 func (handler *Handler) findMin(ctx *gin.Context) {
