@@ -163,7 +163,23 @@ func (handler *Handler) editUser(ctx *gin.Context) {
 }
 
 func (handler *Handler) deleteUser(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	if err := handler.validators.Validate.Var(idStr, "required,numeric,min=1"); err != nil {
+		errors.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
 
+	id, err := strconv.ParseInt(idStr, 10, 0)
+	if err != nil {
+		errors.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := handler.services.DeleteUser(int(id)); err != nil {
+		errors.NewErrorResponse(ctx, err.Code, err.Message)
+	}
+
+	ctx.JSON(http.StatusNoContent, gin.H{"message": "delete success"})
 }
 
 func (handler *Handler) activate(ctx *gin.Context) {

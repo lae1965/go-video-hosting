@@ -233,3 +233,7 @@ func (userService *UserService) DeleteAvatar(id int) *errors.ErrorRes {
 func (userService *UserService) UpdateUser(id int, data map[string]interface{}) *errors.ErrorRes {
 	return userService.dbUser.UpdateUser(id, data)
 }
+
+func (userService *UserService) DeleteUser(id int) *errors.ErrorRes {
+	return userService.dbUser.DeleteUser(id)
+}

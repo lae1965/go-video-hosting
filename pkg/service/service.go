@@ -17,6 +17,7 @@ type Users interface {
 	GetAvatar(id int, sendChunk func(int64, string, []byte) error) *errors.ErrorRes
 	DeleteAvatar(id int) *errors.ErrorRes
 	UpdateUser(id int, data map[string]interface{}) *errors.ErrorRes
+	DeleteUser(id int) *errors.ErrorRes
 }
 
 type Token interface {

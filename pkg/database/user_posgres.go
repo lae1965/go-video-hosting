@@ -106,3 +106,18 @@ func (userPosgres *UserPosrgres) UpdateUser(id int, data map[string]interface{})
 
 	return nil
 }
+
+func (userPosgres *UserPosrgres) DeleteUser(id int) *errors.ErrorRes {
+	query := "DELETE FROM USERS WHERE id = $1"
+
+	result, err := userPosgres.dbSql.Exec(query, id)
+	if err != nil {
+		return &errors.ErrorRes{Code: http.StatusInternalServerError, Message: err.Error()}
+	}
+
+	if row, _ := result.RowsAffected(); row == 0 {
+		return &errors.ErrorRes{Code: http.StatusNotFound, Message: fmt.Sprintf("user with Id = %d not exist", id)}
+	}
+
+	return nil
+}
