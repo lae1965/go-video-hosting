@@ -182,7 +182,7 @@ func (userService *UserService) SaveAvatar(id int, fileName string) *errors.Erro
 		return &errors.ErrorRes{Code: http.StatusInternalServerError, Message: fmt.Sprintf("can't save file to gRPC-server: %s", err.Error())}
 	}
 
-	if err := userService.dbUser.UpdateAvatar(id, newFileName); err != nil {
+	if err := userService.dbUser.UpdateUser(id, map[string]interface{}{"avatar": newFileName}); err != nil {
 		userService.grpcClient.DeleteFromGRPCServer(context.Background(), newFileName)
 		return &errors.ErrorRes{Code: err.Code, Message: fmt.Sprintf("can't save fileName to database: %s", err.Message)}
 	}
@@ -225,7 +225,11 @@ func (userService *UserService) DeleteAvatar(id int) *errors.ErrorRes {
 		return &errors.ErrorRes{Code: http.StatusInternalServerError, Message: fmt.Sprintf("can't delete avatar from gRPC-server: %s", err.Error())}
 	}
 
-	userService.dbUser.UpdateAvatar(id, "")
+	userService.dbUser.UpdateUser(id, map[string]interface{}{"avatar": ""})
 
 	return nil
+}
+
+func (userService *UserService) UpdateUser(id int, data map[string]interface{}) *errors.ErrorRes {
+	return userService.dbUser.UpdateUser(id, data)
 }

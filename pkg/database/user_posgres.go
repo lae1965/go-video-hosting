@@ -6,6 +6,7 @@ import (
 	"go-video-hosting/internal/errors"
 	"go-video-hosting/pkg/model"
 	"net/http"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
@@ -76,12 +77,27 @@ func (userPosrgres *UserPosrgres) GetAvatarByUserId(userId int) (string, *errors
 	return avatar, nil
 }
 
-func (userPosrgres *UserPosrgres) UpdateAvatar(id int, avatarFileName string) *errors.ErrorRes {
-	query := "UPDATE USERS SET avatar = $1 WHERE id = $2"
+func (userPosgres *UserPosrgres) UpdateUser(id int, data map[string]interface{}) *errors.ErrorRes {
+	clauses := []string{}
+	args := []interface{}{}
+	i := 1
+	for key, value := range data {
+		clauses = append(clauses, fmt.Sprintf("%s = $%d", key, i))
+		args = append(args, value)
+		i++
+	}
+	args = append(args, id)
 
-	result, err := userPosrgres.dbSql.Exec(query, avatarFileName, id)
+	query := fmt.Sprintf("UPDATE USERS SET %s WHERE id = $%d", strings.Join(clauses, ", "), i)
+
+	result, err := userPosgres.dbSql.Exec(query, args...)
 	if err != nil {
-		return &errors.ErrorRes{Code: http.StatusInternalServerError, Message: fmt.Sprintf("failed saving avatarFileName to db: %s", err.Error())}
+		if pqErr, ok := err.(*pq.Error); ok {
+			if pqErr.Code == UniqueViolation {
+				return &errors.ErrorRes{Code: http.StatusConflict, Message: fmt.Sprintf("unique violation: %s", err.Error())}
+			}
+		}
+		return &errors.ErrorRes{Code: http.StatusInternalServerError, Message: err.Error()}
 	}
 
 	if row, _ := result.RowsAffected(); row == 0 {

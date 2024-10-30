@@ -31,7 +31,7 @@ func (handler *Handler) InitRoutes() *gin.Engine {
 		user := api.Group("/user", handler.AuthMiddleware)
 		{
 			user.POST("/logout", handler.logout)
-			user.PATCH("/edit/:id", handler.editUser)     // TODO
+			user.PATCH("/edit/:id", handler.editUser)
 			user.DELETE("/:id", handler.deleteUser)       // TODO
 			user.GET("/activate/:link", handler.activate) // TODO
 			user.GET("/find_min/:id", handler.findMin)    // TODO

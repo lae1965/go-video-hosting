@@ -15,7 +15,7 @@ type Users interface {
 	GetUserByEmail(email string) (*model.Users, error)
 	GetUserById(id int) (*model.Users, error)
 	GetAvatarByUserId(userId int) (string, *errors.ErrorRes)
-	UpdateAvatar(id int, avatarFileName string) *errors.ErrorRes
+	UpdateUser(id int, data map[string]interface{}) *errors.ErrorRes
 }
 
 type Token interface {

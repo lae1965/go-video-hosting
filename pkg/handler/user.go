@@ -122,7 +122,44 @@ func (handler *Handler) refresh(ctx *gin.Context) {
 }
 
 func (handler *Handler) editUser(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	if err := handler.validators.Validate.Var(idStr, "required,numeric,min=1"); err != nil {
+		errors.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
 
+	id, err := strconv.ParseInt(idStr, 10, 0)
+	if err != nil {
+		errors.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var user map[string]interface{}
+	if err := ctx.BindJSON(&user); err != nil {
+		errors.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if email, exist := user["email"].(string); exist {
+		if err := handler.validators.Validate.Var(email, "email"); err != nil {
+			errors.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
+			return
+		}
+	}
+
+	if birthDate, exist := user["birthDate"].(time.Time); exist {
+		if _, err := time.Parse(time.RFC3339, birthDate.Format(time.RFC3339)); err != nil {
+			errors.NewErrorResponse(ctx, http.StatusBadRequest, fmt.Sprintf("invalid birthDate formay: %s", err.Error()))
+			return
+		}
+	}
+
+	if errRes := handler.services.UpdateUser(int(id), user); errRes != nil {
+		errors.NewErrorResponse(ctx, errRes.Code, errRes.Message)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "update success"})
 }
 
 func (handler *Handler) deleteUser(ctx *gin.Context) {
