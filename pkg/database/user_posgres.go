@@ -103,7 +103,6 @@ func (userPosgres *UserPosrgres) UpdateUser(id int, data map[string]interface{})
 	if row, _ := result.RowsAffected(); row == 0 {
 		return &errors.ErrorRes{Code: http.StatusNotFound, Message: fmt.Sprintf("user with Id = %d not exist", id)}
 	}
-
 	return nil
 }
 
@@ -134,4 +133,69 @@ func (userPosrgres *UserPosrgres) FindUserByActivateLink(activateLink string) (i
 	}
 
 	return id, nil
+}
+
+func (userPosrgres *UserPosrgres) FindAll() ([]*model.FindUsers, error) {
+	query := "SELECT id, nickName, email, firstName, lastName, birthDate, role, isBanned, channelsCount, createTimestamp FROM USERS"
+
+	users := []*model.FindUsers{}
+	err := userPosrgres.dbSql.Select(&users, query)
+	if err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
+func (userPosrgres *UserPosrgres) FindById(id int) (*model.FindUsers, *errors.ErrorRes) {
+	query := "SELECT id, nickName, email, firstName, lastName, birthDate, role, isBanned, channelsCount, createTimestamp FROM USERS WHERE id = $1"
+
+	var user model.FindUsers
+	if err := userPosrgres.dbSql.Get(&user, query, id); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &errors.ErrorRes{Code: http.StatusNotFound, Message: fmt.Sprintf("user with Id = %d not exist", id)}
+		}
+		return nil, &errors.ErrorRes{Code: http.StatusInternalServerError, Message: err.Error()}
+	}
+
+	return &user, nil
+}
+
+func (userPosrgres *UserPosrgres) FindNickNameById(id int) (string, *errors.ErrorRes) {
+	query := "SELECT nickName FROM USERS WHERE id = $1"
+
+	var nickName string
+	if err := userPosrgres.dbSql.Get(&nickName, query, id); err != nil {
+		if err == sql.ErrNoRows {
+			return "", &errors.ErrorRes{Code: http.StatusNotFound, Message: fmt.Sprintf("user with Id = %d not exist", id)}
+		}
+		return "", &errors.ErrorRes{Code: http.StatusInternalServerError, Message: err.Error()}
+	}
+
+	return nickName, nil
+}
+
+func (userPosrgres *UserPosrgres) CheckIsUnique(key string, value string) (bool, error) {
+	query := fmt.Sprintf("SELECT EXISTS (SELECT 1 FROM USERS WHERE %s = $1)", key)
+
+	var exist bool
+	if err := userPosrgres.dbSql.Get(&exist, query, value); err != nil {
+		return false, err
+	}
+
+	return !exist, nil
+}
+
+func (userPosrgres *UserPosrgres) GetPasswordByUserId(userId int) (string, *errors.ErrorRes) {
+	query := "SELECT password FROM USERS WHERE id = $1"
+
+	var password string
+	if err := userPosrgres.dbSql.Get(&password, query, userId); err != nil {
+		if err == sql.ErrNoRows {
+			return "", &errors.ErrorRes{Code: http.StatusNotFound, Message: fmt.Sprintf("user with Id = %d not exist", userId)}
+		}
+		return "", &errors.ErrorRes{Code: http.StatusInternalServerError, Message: err.Error()}
+	}
+
+	return password, nil
 }

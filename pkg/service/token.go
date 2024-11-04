@@ -41,7 +41,7 @@ func (tokenService *TokenService) CreateTokens(transaction *sql.Tx, user model.U
 		UserId:   user.Id,
 		Nickname: user.NickName,
 		Email:    user.Email,
-		Role:     "admin",
+		Role:     string(user.Role),
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 15)),
 		},
@@ -113,4 +113,8 @@ func (tokenService *TokenService) ValidateToken(tokenString string, tokenKey str
 
 func (tokenService *TokenService) GetTokenIdByToken(token string) (int, error) {
 	return tokenService.dbToken.GetTokenIdByToken(token)
+}
+
+func (tokenService *TokenService) DeleteTokenFromOtherDevices(userId int, refreshTokenId int) error {
+	return tokenService.dbToken.DeleteTokenFromOtherDevices(userId, refreshTokenId)
 }

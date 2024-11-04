@@ -18,6 +18,11 @@ type Users interface {
 	UpdateUser(id int, data map[string]interface{}) *errors.ErrorRes
 	DeleteUser(id int) *errors.ErrorRes
 	FindUserByActivateLink(activateLink string) (int, *errors.ErrorRes)
+	FindAll() ([]*model.FindUsers, error)
+	FindById(id int) (*model.FindUsers, *errors.ErrorRes)
+	FindNickNameById(id int) (string, *errors.ErrorRes)
+	CheckIsUnique(key string, value string) (bool, error)
+	GetPasswordByUserId(userId int) (string, *errors.ErrorRes)
 }
 
 type Token interface {
@@ -25,6 +30,7 @@ type Token interface {
 	UpdateToken(tokenId int, token string) error
 	RemoveToken(tokenId int) error
 	GetTokenIdByToken(token string) (int, error)
+	DeleteTokenFromOtherDevices(userId int, refreshTokenId int) error
 }
 
 type Database struct {
