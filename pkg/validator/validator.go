@@ -3,6 +3,7 @@ package validator
 import (
 	"mime/multipart"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -19,6 +20,7 @@ func NewValidator() *Validator {
 	}
 	validator.Validate.RegisterValidation("password", PasswordValidator)
 	validator.Validate.RegisterValidation("avatar", AvatarValidator)
+	validator.Validate.RegisterValidation("channelIdList", ChannelIdListValidator)
 	return validator
 }
 
@@ -62,4 +64,21 @@ func AvatarValidator(fl validator.FieldLevel) bool {
 	}
 
 	return false
+}
+
+func ChannelIdListValidator(fl validator.FieldLevel) bool {
+	idList := fl.Field().String()
+
+	idListArr := strings.Split(idList, "_")
+	if len(idListArr) != 2 {
+		return false
+	}
+
+	for _, idStr := range idListArr {
+		if _, err := strconv.ParseInt(idStr, 10, 0); err != nil {
+			return false
+		}
+	}
+
+	return true
 }

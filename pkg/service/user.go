@@ -234,6 +234,7 @@ func (userService *UserService) UpdateUser(id int, data map[string]interface{}) 
 }
 
 func (userService *UserService) DeleteUser(id int) *errors.ErrorRes {
+	//TODO - удалить все видео user'а и аватар с gRPC - сервера
 	return userService.dbUser.DeleteUser(id)
 }
 

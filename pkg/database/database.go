@@ -23,6 +23,7 @@ type Users interface {
 	FindNickNameById(id int) (string, *errors.ErrorRes)
 	CheckIsUnique(key string, value string) (bool, error)
 	GetPasswordByUserId(userId int) (string, *errors.ErrorRes)
+	ChangeChannelsCountOfUser(userId int, isIncrement bool) *errors.ErrorRes
 }
 
 type Token interface {
@@ -33,17 +34,33 @@ type Token interface {
 	DeleteTokenFromOtherDevices(userId int, refreshTokenId int) error
 }
 
+type Channel interface {
+	IsUserExist(userId int) (bool, error)
+	IsTitlelUniqueForUser(userId int, title string) (bool, error)
+	CreateChannel(userId int, title string, description string) (int, *errors.ErrorRes)
+	UpdateChannel(userId int, channelId int, data map[string]string) *errors.ErrorRes
+	DeleteChannel(channelId int) (int, *errors.ErrorRes)
+	ToggleSubscribe(userId, channelId int) (bool, *errors.ErrorRes)
+	ChangeSubscribersCount(channelId int, isNegative bool) (int, *errors.ErrorRes)
+	GetChannelById(channelId int) (*model.GetChannelFromDB, *errors.ErrorRes)
+	IsSubscribe(userId, channelId int) (bool, *errors.ErrorRes)
+	GetAllChannelsOfUser(userId int) ([]*model.GetChannelFromDB, *errors.ErrorRes)
+	GetSubscribingChannelsOfUser(userId int) ([]*model.SubscribeRequest, *errors.ErrorRes)
+}
+
 type Database struct {
 	Users
 	Token
+	Channel
 	dbSql *sqlx.DB
 }
 
 func NewDatabase(dbSql *sqlx.DB) *Database {
 	return &Database{
-		Users: NewUserPostgres(dbSql),
-		Token: NewTokenPostgres(dbSql),
-		dbSql: dbSql,
+		Users:   NewUserPostgres(dbSql),
+		Token:   NewTokenPostgres(dbSql),
+		Channel: NewChannelPostgres(dbSql),
+		dbSql:   dbSql,
 	}
 }
 

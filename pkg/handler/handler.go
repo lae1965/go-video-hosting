@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"go-video-hosting/pkg/service"
 	"go-video-hosting/pkg/validator"
 	"strconv"
@@ -17,9 +18,9 @@ func NewHandler(services *service.Service, validators *validator.Validator) *Han
 	return &Handler{services: services, validators: validators}
 }
 
-func (handler *Handler) GetIdFromParams(ctx *gin.Context) (int, error) {
-	idStr := ctx.Param("id")
-	if err := handler.validators.Validate.Var(idStr, "required,numeric,min=1"); err != nil {
+func (handler *Handler) GetIdFromQuery(key string, min int, getKey func(string) string) (int, error) {
+	idStr := getKey(key)
+	if err := handler.validators.Validate.Var(idStr, fmt.Sprintf("required,numeric,min=%d", min)); err != nil {
 		return 0, err
 	}
 
@@ -56,8 +57,20 @@ func (handler *Handler) InitRoutes() *gin.Engine {
 			user.POST("/avatar/:id", handler.saveAvatar)
 			user.GET("/avatar/:id", handler.getAvatar)
 			user.DELETE("/avatar/:id", handler.deleteAvatar)
-			user.GET("/check", handler.checkUnique)                // TODO
-			user.PATCH("/change_password", handler.changePassword) // TODO
+			user.GET("/check", handler.checkUnique)
+			user.PATCH("/change_password", handler.changePassword)
+		}
+
+		// channel := api.Group("/channel", handler.AuthMiddleware) //! for testing
+		channel := api.Group("/channel") //! for testing
+		{
+			channel.POST("/create", handler.createChannel)
+			channel.PATCH("/edit", handler.editChannel)
+			channel.PATCH("/subscribe", handler.subscribe)
+			channel.DELETE("/:id", handler.removeChannel)
+			channel.GET("/get_one", handler.getOneChannel)
+			channel.GET("/get_all/:user_id", handler.getAllChannelsOfUser)
+			channel.GET("subscribes_list/:user_id", handler.getSubscribersList)
 		}
 	}
 

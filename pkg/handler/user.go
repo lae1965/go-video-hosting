@@ -123,7 +123,10 @@ func (handler *Handler) refresh(ctx *gin.Context) {
 }
 
 func (handler *Handler) editUser(ctx *gin.Context) {
-	id, err := handler.GetIdFromParams(ctx)
+	id, err := handler.GetIdFromQuery("id", 1, func(key string) string {
+		return ctx.Param(key)
+	})
+
 	if err != nil {
 		errors.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
@@ -169,7 +172,9 @@ func (handler *Handler) editUser(ctx *gin.Context) {
 }
 
 func (handler *Handler) deleteUser(ctx *gin.Context) {
-	id, err := handler.GetIdFromParams(ctx)
+	id, err := handler.GetIdFromQuery("id", 1, func(key string) string {
+		return ctx.Param(key)
+	})
 	if err != nil {
 		errors.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
@@ -199,7 +204,9 @@ func (handler *Handler) activate(ctx *gin.Context) {
 }
 
 func (handler *Handler) findMin(ctx *gin.Context) {
-	id, err := handler.GetIdFromParams(ctx)
+	id, err := handler.GetIdFromQuery("id", 1, func(key string) string {
+		return ctx.Param(key)
+	})
 	if err != nil {
 		errors.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
@@ -216,7 +223,9 @@ func (handler *Handler) findMin(ctx *gin.Context) {
 }
 
 func (handler *Handler) find(ctx *gin.Context) {
-	id, err := handler.GetIdFromParams(ctx)
+	id, err := handler.GetIdFromQuery("id", 1, func(key string) string {
+		return ctx.Param(key)
+	})
 	if err != nil {
 		errors.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
@@ -242,7 +251,9 @@ func (handler *Handler) findAll(ctx *gin.Context) {
 }
 
 func (handler *Handler) saveAvatar(ctx *gin.Context) {
-	id, err := handler.GetIdFromParams(ctx)
+	id, err := handler.GetIdFromQuery("id", 1, func(key string) string {
+		return ctx.Param(key)
+	})
 	if err != nil {
 		errors.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
@@ -268,7 +279,9 @@ func (handler *Handler) saveAvatar(ctx *gin.Context) {
 }
 
 func (handler *Handler) getAvatar(ctx *gin.Context) {
-	id, err := handler.GetIdFromParams(ctx)
+	id, err := handler.GetIdFromQuery("id", 1, func(key string) string {
+		return ctx.Param(key)
+	})
 	if err != nil {
 		errors.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
@@ -292,7 +305,9 @@ func (handler *Handler) getAvatar(ctx *gin.Context) {
 }
 
 func (handler *Handler) deleteAvatar(ctx *gin.Context) {
-	id, err := handler.GetIdFromParams(ctx)
+	id, err := handler.GetIdFromQuery("id", 1, func(key string) string {
+		return ctx.Param(key)
+	})
 	if err != nil {
 		errors.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
