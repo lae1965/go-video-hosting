@@ -113,8 +113,7 @@ func (userService *UserService) Login(user model.Users) (*model.UserResponse, *e
 		return nil, &errors.ErrorRes{Code: http.StatusBadRequest, Message: fmt.Sprintf("user with email %s not found: %s", user.Email, err.Error())}
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(newUser.Password), []byte(user.Password))
-	if err != nil {
+	if err = bcrypt.CompareHashAndPassword([]byte(newUser.Password), []byte(user.Password)); err != nil {
 		return nil, &errors.ErrorRes{Code: http.StatusUnauthorized, Message: fmt.Sprintf("wrong password: %s", err.Error())}
 	}
 
@@ -182,7 +181,7 @@ func (userService *UserService) SaveAvatar(id int, fileName string) *errors.Erro
 		return &errors.ErrorRes{Code: http.StatusInternalServerError, Message: fmt.Sprintf("can't save file to gRPC-server: %s", err.Error())}
 	}
 
-	if err := userService.dbUser.UpdateAvatar(id, newFileName); err != nil {
+	if err := userService.dbUser.UpdateUser(id, map[string]interface{}{"avatar": newFileName}); err != nil {
 		userService.grpcClient.DeleteFromGRPCServer(context.Background(), newFileName)
 		return &errors.ErrorRes{Code: err.Code, Message: fmt.Sprintf("can't save fileName to database: %s", err.Message)}
 	}
@@ -225,7 +224,105 @@ func (userService *UserService) DeleteAvatar(id int) *errors.ErrorRes {
 		return &errors.ErrorRes{Code: http.StatusInternalServerError, Message: fmt.Sprintf("can't delete avatar from gRPC-server: %s", err.Error())}
 	}
 
-	userService.dbUser.UpdateAvatar(id, "")
+	userService.dbUser.UpdateUser(id, map[string]interface{}{"avatar": ""})
+
+	return nil
+}
+
+func (userService *UserService) UpdateUser(id int, data map[string]interface{}) *errors.ErrorRes {
+	return userService.dbUser.UpdateUser(id, data)
+}
+
+func (userService *UserService) DeleteUser(id int) *errors.ErrorRes {
+	return userService.dbUser.DeleteUser(id)
+}
+
+func (userService *UserService) Activate(activateLink string) *errors.ErrorRes {
+	userId, err := userService.dbUser.FindUserByActivateLink(activateLink)
+	if err != nil {
+		return &errors.ErrorRes{Code: err.Code, Message: err.Message}
+	}
+
+	if err := userService.dbUser.UpdateUser(userId, map[string]interface{}{"isActivate": true}); err != nil {
+		return &errors.ErrorRes{Code: err.Code, Message: err.Message}
+	}
+
+	return nil
+}
+
+func (userService *UserService) FindAll() ([]*model.FindUsers, error) {
+	return userService.dbUser.FindAll()
+}
+
+func (userService *UserService) FindById(id int) (*model.FindUsers, *errors.ErrorRes) {
+	return userService.dbUser.FindById(id)
+}
+
+func (userService *UserService) FindNickNameById(id int) (string, *errors.ErrorRes) {
+	return userService.dbUser.FindNickNameById(id)
+}
+
+func (userService *UserService) CheckIsNickNameEmailUnique(nickName string, email string) (bool, string, error) {
+	notUniqueList := []string{}
+	isUniqie := func(key string, value string) (bool, error) {
+		var isValueUnique bool
+		var err error
+
+		if value == "" {
+			isValueUnique = true
+		} else {
+			isValueUnique, err = userService.dbUser.CheckIsUnique(key, value)
+			if err != nil {
+				return false, err
+			}
+			if !isValueUnique {
+				notUniqueList = append(notUniqueList, key)
+			}
+		}
+
+		return isValueUnique, nil
+	}
+
+	isNickNameUnique, err := isUniqie("nickName", nickName)
+	if err != nil {
+		return false, "", err
+	}
+
+	isEmailUnique, err := isUniqie("email", email)
+	if err != nil {
+		return false, "", err
+	}
+
+	message := ""
+	if len(notUniqueList) > 0 {
+		message = fmt.Sprintf("%s not unique", strings.Join(notUniqueList, " and "))
+	}
+
+	return isEmailUnique && isNickNameUnique, message, nil
+}
+
+func (userService *UserService) ChangePassword(userId int, refreshTokenId int, oldPassword string, newPassword string) *errors.ErrorRes {
+	dbPassword, errRes := userService.dbUser.GetPasswordByUserId(userId)
+	if errRes != nil {
+		return &errors.ErrorRes{Code: errRes.Code, Message: errRes.Message}
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(dbPassword), []byte(oldPassword)); err != nil {
+		return &errors.ErrorRes{Code: http.StatusConflict, Message: fmt.Sprintf("wrong oldPassword: %s", err.Error())}
+	}
+
+	hashPassword, err := userService.GenerateHashPassword(newPassword)
+	if err != nil {
+		return &errors.ErrorRes{Code: http.StatusInternalServerError, Message: err.Error()}
+	}
+
+	if err := userService.dbUser.UpdateUser(userId, map[string]interface{}{"password": hashPassword}); err != nil {
+		return &errors.ErrorRes{Code: err.Code, Message: err.Message}
+	}
+
+	if err := userService.token.DeleteTokenFromOtherDevices(userId, refreshTokenId); err != nil {
+		return &errors.ErrorRes{Code: http.StatusInternalServerError, Message: err.Error()}
+	}
 
 	return nil
 }

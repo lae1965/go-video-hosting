@@ -16,6 +16,14 @@ type Users interface {
 	SaveAvatar(id int, fileName string) *errors.ErrorRes
 	GetAvatar(id int, sendChunk func(int64, string, []byte) error) *errors.ErrorRes
 	DeleteAvatar(id int) *errors.ErrorRes
+	UpdateUser(id int, data map[string]interface{}) *errors.ErrorRes
+	DeleteUser(id int) *errors.ErrorRes
+	Activate(activateLink string) *errors.ErrorRes
+	FindAll() ([]*model.FindUsers, error)
+	FindById(id int) (*model.FindUsers, *errors.ErrorRes)
+	FindNickNameById(id int) (string, *errors.ErrorRes)
+	CheckIsNickNameEmailUnique(nickName string, email string) (bool, string, error)
+	ChangePassword(userId int, refreshTokenId int, oldPassword string, newPassword string) *errors.ErrorRes
 }
 
 type Token interface {
@@ -23,6 +31,7 @@ type Token interface {
 	RemoveToken(tokenId int) error
 	ValidateToken(tokenString string, tokenKey string) (int, error)
 	GetTokenIdByToken(token string) (int, error)
+	DeleteTokenFromOtherDevices(userId int, refreshTokenId int) error
 }
 
 type Service struct {

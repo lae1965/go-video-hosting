@@ -58,3 +58,11 @@ func (tokenPostgres *TokenPosrgres) GetTokenIdByToken(token string) (int, error)
 
 	return id, nil
 }
+
+func (tokenPostgres *TokenPosrgres) DeleteTokenFromOtherDevices(userId int, refreshTokenId int) error {
+	query := "DELETE FROM TOKEN WHERE userId = $1 AND id != $2"
+
+	_, err := tokenPostgres.dbSql.Exec(query, userId, refreshTokenId)
+
+	return err
+}

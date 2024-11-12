@@ -3,6 +3,7 @@ package handler
 import (
 	"go-video-hosting/pkg/service"
 	"go-video-hosting/pkg/validator"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,6 +17,20 @@ func NewHandler(services *service.Service, validators *validator.Validator) *Han
 	return &Handler{services: services, validators: validators}
 }
 
+func (handler *Handler) GetIdFromParams(ctx *gin.Context) (int, error) {
+	idStr := ctx.Param("id")
+	if err := handler.validators.Validate.Var(idStr, "required,numeric,min=1"); err != nil {
+		return 0, err
+	}
+
+	id, err := strconv.ParseInt(idStr, 10, 0)
+	if err != nil {
+		return 0, err
+	}
+
+	return int(id), nil
+}
+
 func (handler *Handler) InitRoutes() *gin.Engine {
 	router := gin.New()
 
@@ -26,21 +41,22 @@ func (handler *Handler) InitRoutes() *gin.Engine {
 			userPublic.POST("/registration", handler.registration)
 			userPublic.POST("/login", handler.login)
 			userPublic.GET("/refresh", handler.refresh)
+			userPublic.GET("/activate/:link", handler.activate)
 		}
 
-		user := api.Group("/user", handler.AuthMiddleware)
+		// user := api.Group("/user", handler.AuthMiddleware) //! for testing
+		user := api.Group("/user") //! for testing
 		{
 			user.POST("/logout", handler.logout)
-			user.PATCH("/edit/:id", handler.editUser)     // TODO
-			user.DELETE("/:id", handler.deleteUser)       // TODO
-			user.GET("/activate/:link", handler.activate) // TODO
-			user.GET("/find_min/:id", handler.findMin)    // TODO
-			user.GET("/find/:id", handler.find)           // TODO
-			user.GET("/", handler.findAll)                // TODO
+			user.PATCH("/edit/:id", handler.editUser)
+			user.DELETE("/:id", handler.deleteUser)
+			user.GET("/find_min/:id", handler.findMin)
+			user.GET("/find/:id", handler.find)
+			user.GET("/", handler.findAll)
 			user.POST("/avatar/:id", handler.saveAvatar)
 			user.GET("/avatar/:id", handler.getAvatar)
 			user.DELETE("/avatar/:id", handler.deleteAvatar)
-			user.GET("/check", handler.checkPassword)              // TODO
+			user.GET("/check", handler.checkUnique)                // TODO
 			user.PATCH("/change_password", handler.changePassword) // TODO
 		}
 	}

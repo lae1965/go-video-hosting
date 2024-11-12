@@ -7,7 +7,7 @@ CREATE TABLE USERS (
   password VARCHAR(256) NOT NULL,
   firstName VARCHAR(64) DEFAULT '',
   lastName VARCHAR(64) DEFAULT '',
-  birthDate DATE,
+  birthDate VARCHAR(32) Default '',
   avatar VARCHAR(64) DEFAULT '',
   role ROLE DEFAULT 'userRole',
   activateLink VARCHAR(64)  DEFAULT '',
