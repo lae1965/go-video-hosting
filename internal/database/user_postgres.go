@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"go-video-hosting/internal/errors"
-	"go-video-hosting/pkg/model"
+	"go-video-hosting/internal/model"
 	"net/http"
 	"strings"
 

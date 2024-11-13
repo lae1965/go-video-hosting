@@ -3,9 +3,9 @@ package service
 import (
 	"database/sql"
 	"go-video-hosting/gRPC/client"
+	"go-video-hosting/internal/database"
 	"go-video-hosting/internal/errors"
-	"go-video-hosting/pkg/database"
-	"go-video-hosting/pkg/model"
+	"go-video-hosting/internal/model"
 )
 
 type Users interface {

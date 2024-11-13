@@ -2,8 +2,8 @@ package handler
 
 import (
 	"fmt"
-	"go-video-hosting/pkg/service"
-	"go-video-hosting/pkg/validator"
+	"go-video-hosting/internal/service"
+	"go-video-hosting/internal/validator"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -53,7 +53,7 @@ func (handler *Handler) InitRoutes() *gin.Engine {
 			user.DELETE("/:id", handler.deleteUser)
 			user.GET("/find_min/:id", handler.findMin)
 			user.GET("/find/:id", handler.find)
-			user.GET("/", handler.findAll)
+			user.GET("", handler.findAll)
 			user.POST("/avatar/:id", handler.saveAvatar)
 			user.GET("/avatar/:id", handler.getAvatar)
 			user.DELETE("/avatar/:id", handler.deleteAvatar)

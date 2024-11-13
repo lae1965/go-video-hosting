@@ -2,11 +2,11 @@ package main
 
 import (
 	"go-video-hosting/gRPC/client"
+	"go-video-hosting/internal/database"
+	"go-video-hosting/internal/handler"
 	"go-video-hosting/internal/server"
-	"go-video-hosting/pkg/database"
-	"go-video-hosting/pkg/handler"
-	"go-video-hosting/pkg/service"
-	"go-video-hosting/pkg/validator"
+	"go-video-hosting/internal/service"
+	"go-video-hosting/internal/validator"
 	"os"
 
 	_ "github.com/lib/pq"

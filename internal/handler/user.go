@@ -3,7 +3,7 @@ package handler
 import (
 	"fmt"
 	"go-video-hosting/internal/errors"
-	"go-video-hosting/pkg/model"
+	"go-video-hosting/internal/model"
 	"net/http"
 	"strconv"
 	"time"

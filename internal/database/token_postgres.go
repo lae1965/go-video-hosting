@@ -2,7 +2,7 @@ package database
 
 import (
 	"database/sql"
-	"go-video-hosting/pkg/model"
+	"go-video-hosting/internal/model"
 
 	"github.com/jmoiron/sqlx"
 )

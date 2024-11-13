@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"go-video-hosting/internal/errors"
-	"go-video-hosting/pkg/model"
+	"go-video-hosting/internal/model"
 	"net/http"
 	"strings"
 
@@ -243,7 +243,7 @@ func (channelPostgres *ChannelPostgres) GetSubscribingChannelsOfUser(userId int)
 		return nil, &errors.ErrorRes{Code: http.StatusInternalServerError, Message: err.Error()}
 	}
 	if len(response) == 0 {
-		return nil, &errors.ErrorRes{Code: http.StatusNoContent, Message: fmt.Sprintf("user with Id = %d has no channels", userId)}
+		return nil, &errors.ErrorRes{Code: http.StatusNoContent, Message: fmt.Sprintf("user with Id = %d has not subscription to channels", userId)}
 	}
 
 	return response, nil

@@ -2,7 +2,7 @@ package handler
 
 import (
 	"go-video-hosting/internal/errors"
-	"go-video-hosting/pkg/model"
+	"go-video-hosting/internal/model"
 	"net/http"
 	"strconv"
 	"strings"

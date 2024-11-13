@@ -5,9 +5,9 @@ import (
 	"database/sql"
 	"fmt"
 	grpcclient "go-video-hosting/gRPC/client"
+	"go-video-hosting/internal/database"
 	"go-video-hosting/internal/errors"
-	"go-video-hosting/pkg/database"
-	"go-video-hosting/pkg/model"
+	"go-video-hosting/internal/model"
 	"net/http"
 
 	"os"
