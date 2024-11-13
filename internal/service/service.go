@@ -19,9 +19,9 @@ type Users interface {
 	UpdateUser(id int, data map[string]interface{}) *errors.AppError
 	DeleteUser(id int) *errors.AppError
 	Activate(activateLink string) *errors.AppError
-	FindAll() ([]*model.FindUsers, error)
-	FindById(id int) (*model.FindUsers, *errors.AppError)
-	FindNickNameById(id int) (string, *errors.AppError)
+	GetAll() ([]*model.FindUsers, error)
+	GetById(id int) (*model.FindUsers, *errors.AppError)
+	GetNickNameById(id int) (string, *errors.AppError)
 	CheckIsNickNameEmailUnique(nickName string, email string) (bool, string, error)
 	ChangePassword(userId int, refreshTokenId int, oldPassword string, newPassword string) *errors.AppError
 }

@@ -13,14 +13,14 @@ import (
 type Users interface {
 	CreateUser(transaction *sql.Tx, user model.Users) (int, *errors.AppError)
 	GetUserByEmail(email string) (*model.Users, error)
-	GetUserById(id int) (*model.Users, error)
+	GetUserForRefreshById(id int) (*model.Users, error)
 	GetAvatarByUserId(userId int) (string, *errors.AppError)
 	UpdateUser(id int, data map[string]interface{}) *errors.AppError
 	DeleteUser(id int) *errors.AppError
-	FindUserByActivateLink(activateLink string) (int, *errors.AppError)
-	FindAll() ([]*model.FindUsers, error)
-	FindById(id int) (*model.FindUsers, *errors.AppError)
-	FindNickNameById(id int) (string, *errors.AppError)
+	GetUserByActivateLink(activateLink string) (int, *errors.AppError)
+	GetAll() ([]*model.FindUsers, error)
+	GetById(id int) (*model.FindUsers, *errors.AppError)
+	GetNickNameById(id int) (string, *errors.AppError)
 	CheckIsUnique(key string, value string) (bool, error)
 	GetPasswordByUserId(userId int) (string, *errors.AppError)
 	ChangeChannelsCountOfUser(transaction *sql.Tx, userId int, isIncrement bool) *errors.AppError

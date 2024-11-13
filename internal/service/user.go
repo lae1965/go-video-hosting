@@ -150,7 +150,7 @@ func (userService *UserService) Refresh(refreshToken string) (*model.UserRespons
 		return nil, errors.New(errors.Unauthorization, fmt.Sprintf("refreshtoken is not found in DB: %s", err.Error()))
 	}
 
-	userFromDB, err := userService.dbUser.GetUserById(userId)
+	userFromDB, err := userService.dbUser.GetUserForRefreshById(userId)
 	if err != nil {
 		return nil, errors.New(errors.Unauthorization, fmt.Sprintf("user with such refreshtoken is not exist: %s", err.Error()))
 	}
@@ -243,7 +243,7 @@ func (userService *UserService) DeleteUser(id int) *errors.AppError {
 }
 
 func (userService *UserService) Activate(activateLink string) *errors.AppError {
-	userId, err := userService.dbUser.FindUserByActivateLink(activateLink)
+	userId, err := userService.dbUser.GetUserByActivateLink(activateLink)
 	if err != nil {
 		err.Message = fmt.Sprintf("can not find user by activate link: %s", err.Message)
 		return err
@@ -257,16 +257,16 @@ func (userService *UserService) Activate(activateLink string) *errors.AppError {
 	return nil
 }
 
-func (userService *UserService) FindAll() ([]*model.FindUsers, error) {
-	return userService.dbUser.FindAll()
+func (userService *UserService) GetAll() ([]*model.FindUsers, error) {
+	return userService.dbUser.GetAll()
 }
 
-func (userService *UserService) FindById(id int) (*model.FindUsers, *errors.AppError) {
-	return userService.dbUser.FindById(id)
+func (userService *UserService) GetById(id int) (*model.FindUsers, *errors.AppError) {
+	return userService.dbUser.GetById(id)
 }
 
-func (userService *UserService) FindNickNameById(id int) (string, *errors.AppError) {
-	return userService.dbUser.FindNickNameById(id)
+func (userService *UserService) GetNickNameById(id int) (string, *errors.AppError) {
+	return userService.dbUser.GetNickNameById(id)
 }
 
 func (userService *UserService) CheckIsNickNameEmailUnique(nickName string, email string) (bool, string, error) {

@@ -253,7 +253,7 @@ func (handler *Handler) activate(ctx *gin.Context) {
 	ctx.Redirect(http.StatusOK, fmt.Sprintf("%s:%s/emailConfirm", viper.GetString("client.host"), viper.GetString("client.port")))
 }
 
-func (handler *Handler) findMin(ctx *gin.Context) {
+func (handler *Handler) getMin(ctx *gin.Context) {
 	id, err := handler.GetIdFromQuery("id", 1, func(key string) string {
 		return ctx.Param(key)
 	})
@@ -262,7 +262,7 @@ func (handler *Handler) findMin(ctx *gin.Context) {
 		return
 	}
 
-	nickName, appErr := handler.services.FindNickNameById(id)
+	nickName, appErr := handler.services.GetNickNameById(id)
 	if appErr != nil {
 		var code int
 		switch appErr.Type {
@@ -280,7 +280,7 @@ func (handler *Handler) findMin(ctx *gin.Context) {
 
 }
 
-func (handler *Handler) find(ctx *gin.Context) {
+func (handler *Handler) getById(ctx *gin.Context) {
 	id, err := handler.GetIdFromQuery("id", 1, func(key string) string {
 		return ctx.Param(key)
 	})
@@ -289,7 +289,7 @@ func (handler *Handler) find(ctx *gin.Context) {
 		return
 	}
 
-	user, appErr := handler.services.FindById(id)
+	user, appErr := handler.services.GetById(id)
 	if appErr != nil {
 		var code int
 		switch appErr.Type {
@@ -306,8 +306,8 @@ func (handler *Handler) find(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, user)
 }
 
-func (handler *Handler) findAll(ctx *gin.Context) {
-	users, err := handler.services.FindAll()
+func (handler *Handler) getAll(ctx *gin.Context) {
+	users, err := handler.services.GetAll()
 	if err != nil {
 		ErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return

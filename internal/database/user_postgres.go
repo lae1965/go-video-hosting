@@ -47,7 +47,7 @@ func (userPostgres *UserPostgres) GetUserByEmail(email string) (*model.Users, er
 	return &user, nil
 }
 
-func (userPostgres *UserPostgres) GetUserById(id int) (*model.Users, error) {
+func (userPostgres *UserPostgres) GetUserForRefreshById(id int) (*model.Users, error) {
 	query := "SELECT id, nickName, email, role FROM USERS WHERE id=$1"
 
 	row := userPostgres.dbSql.QueryRow(query, id)
@@ -120,7 +120,7 @@ func (userPostgres *UserPostgres) DeleteUser(id int) *errors.AppError {
 	return nil
 }
 
-func (userPostgres *UserPostgres) FindUserByActivateLink(activateLink string) (int, *errors.AppError) {
+func (userPostgres *UserPostgres) GetUserByActivateLink(activateLink string) (int, *errors.AppError) {
 	query := "SELECT id FROM USERS WHERE activateLink = $1"
 
 	var id int
@@ -134,7 +134,7 @@ func (userPostgres *UserPostgres) FindUserByActivateLink(activateLink string) (i
 	return id, nil
 }
 
-func (userPostgres *UserPostgres) FindAll() ([]*model.FindUsers, error) {
+func (userPostgres *UserPostgres) GetAll() ([]*model.FindUsers, error) {
 	query := "SELECT id, nickName, email, firstName, lastName, birthDate, role, isBanned, channelsCount, createTimestamp FROM USERS"
 
 	users := []*model.FindUsers{}
@@ -145,7 +145,7 @@ func (userPostgres *UserPostgres) FindAll() ([]*model.FindUsers, error) {
 	return users, nil
 }
 
-func (userPostgres *UserPostgres) FindById(id int) (*model.FindUsers, *errors.AppError) {
+func (userPostgres *UserPostgres) GetById(id int) (*model.FindUsers, *errors.AppError) {
 	query := "SELECT id, nickName, email, firstName, lastName, birthDate, role, isBanned, channelsCount, createTimestamp FROM USERS WHERE id = $1"
 
 	var user model.FindUsers
@@ -159,7 +159,7 @@ func (userPostgres *UserPostgres) FindById(id int) (*model.FindUsers, *errors.Ap
 	return &user, nil
 }
 
-func (userPostgres *UserPostgres) FindNickNameById(id int) (string, *errors.AppError) {
+func (userPostgres *UserPostgres) GetNickNameById(id int) (string, *errors.AppError) {
 	query := "SELECT nickName FROM USERS WHERE id = $1"
 
 	var nickName string
