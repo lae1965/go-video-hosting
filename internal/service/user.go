@@ -325,7 +325,7 @@ func (userService *UserService) ChangePassword(userId int, refreshTokenId int, o
 	}
 
 	if err := userService.dbUser.UpdateUser(userId, map[string]interface{}{"password": hashPassword}); err != nil {
-		appErr.Message = fmt.Sprintf("wrong updating password in DB: %s", appErr.Message)
+		err.Message = fmt.Sprintf("wrong updating password in DB: %s", err.Message)
 		return err
 	}
 
