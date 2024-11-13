@@ -14,7 +14,7 @@ type Validator struct {
 	Validate *validator.Validate
 }
 
-func NewValidator() *Validator {
+func New() *Validator {
 	validator := &Validator{
 		Validate: validator.New(),
 	}

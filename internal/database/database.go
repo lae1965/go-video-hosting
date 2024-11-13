@@ -55,7 +55,7 @@ type Database struct {
 	dbSql *sqlx.DB
 }
 
-func NewDatabase(dbSql *sqlx.DB) *Database {
+func New(dbSql *sqlx.DB) *Database {
 	return &Database{
 		Users:   NewUserPostgres(dbSql),
 		Token:   NewTokenPostgres(dbSql),

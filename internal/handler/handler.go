@@ -14,7 +14,7 @@ type Handler struct {
 	validators *validator.Validator
 }
 
-func NewHandler(services *service.Service, validators *validator.Validator) *Handler {
+func New(services *service.Service, validators *validator.Validator) *Handler {
 	return &Handler{services: services, validators: validators}
 }
 

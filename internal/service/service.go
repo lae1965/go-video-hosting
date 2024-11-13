@@ -50,7 +50,7 @@ type Service struct {
 	Channel
 }
 
-func NewService(db *database.Database, grpcClient grpcclient.FilesGRPCClient) *Service {
+func New(db *database.Database, grpcClient grpcclient.FilesGRPCClient) *Service {
 	return &Service{
 		Users:   NewUserService(db.Users, NewTokenService(db.Token), db.BeginTransaction, grpcClient),
 		Token:   NewTokenService(db.Token),
