@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"go-video-hosting/internal/errors"
 	"go-video-hosting/internal/model"
-	"net/http"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
@@ -20,7 +19,7 @@ func NewUserPostgres(dbSql *sqlx.DB) *UserPostgres {
 	return &UserPostgres{dbSql: dbSql}
 }
 
-func (userPostgres *UserPostgres) CreateUser(transaction *sql.Tx, user model.Users) (int, *errors.ErrorRes) {
+func (userPostgres *UserPostgres) CreateUser(transaction *sql.Tx, user model.Users) (int, *errors.AppError) {
 	query := "INSERT INTO USERS (nickName, email, password, activateLink) values ($1, $2, $3, $4) RETURNING id"
 
 	row := transaction.QueryRow(query, user.NickName, user.Email, user.Password, user.ActivateLink)
@@ -29,10 +28,10 @@ func (userPostgres *UserPostgres) CreateUser(transaction *sql.Tx, user model.Use
 	if err := row.Scan(&id); err != nil {
 		if pqErr, ok := err.(*pq.Error); ok {
 			if pqErr.Code == UniqueViolation {
-				return 0, &errors.ErrorRes{Code: http.StatusConflict, Message: fmt.Sprintf("unique violation: %s", err.Error())}
+				return 0, errors.New(errors.NotUnique, fmt.Sprintf("unique violation: %s", err.Error()))
 			}
 		}
-		return 0, &errors.ErrorRes{Code: http.StatusInternalServerError, Message: err.Error()}
+		return 0, errors.New(errors.UnknownError, err.Error())
 	}
 	return id, nil
 }
@@ -61,7 +60,7 @@ func (userPostgres *UserPostgres) GetUserById(id int) (*model.Users, error) {
 	return &user, nil
 }
 
-func (userPostgres *UserPostgres) GetAvatarByUserId(userId int) (string, *errors.ErrorRes) {
+func (userPostgres *UserPostgres) GetAvatarByUserId(userId int) (string, *errors.AppError) {
 	query := "SELECT avatar FROM USERS WHERE id=$1"
 
 	row := userPostgres.dbSql.QueryRow(query, userId)
@@ -69,15 +68,15 @@ func (userPostgres *UserPostgres) GetAvatarByUserId(userId int) (string, *errors
 	var avatar string
 	if err := row.Scan(&avatar); err != nil {
 		if err == sql.ErrNoRows {
-			return "", &errors.ErrorRes{Code: http.StatusNotFound, Message: fmt.Sprintf("user with Id = %d not exist", userId)}
+			return "", errors.New(errors.NotFound, fmt.Sprintf("user with Id = %d not exist", userId))
 		}
-		return "", &errors.ErrorRes{Code: http.StatusInternalServerError, Message: err.Error()}
+		return "", errors.New(errors.UnknownError, err.Error())
 	}
 
 	return avatar, nil
 }
 
-func (userPostgres *UserPostgres) UpdateUser(id int, data map[string]interface{}) *errors.ErrorRes {
+func (userPostgres *UserPostgres) UpdateUser(id int, data map[string]interface{}) *errors.AppError {
 	clauses := []string{}
 	args := []interface{}{}
 	i := 1
@@ -94,42 +93,42 @@ func (userPostgres *UserPostgres) UpdateUser(id int, data map[string]interface{}
 	if err != nil {
 		if pqErr, ok := err.(*pq.Error); ok {
 			if pqErr.Code == UniqueViolation {
-				return &errors.ErrorRes{Code: http.StatusConflict, Message: fmt.Sprintf("unique violation: %s", err.Error())}
+				return errors.New(errors.NotUnique, fmt.Sprintf("unique violation: %s", err.Error()))
 			}
 		}
-		return &errors.ErrorRes{Code: http.StatusInternalServerError, Message: err.Error()}
+		return errors.New(errors.UnknownError, err.Error())
 	}
 
 	if row, _ := result.RowsAffected(); row == 0 {
-		return &errors.ErrorRes{Code: http.StatusNotFound, Message: fmt.Sprintf("user with Id = %d not exist", id)}
+		return errors.New(errors.NotFound, fmt.Sprintf("user with Id = %d not exist", id))
 	}
 	return nil
 }
 
-func (userPostgres *UserPostgres) DeleteUser(id int) *errors.ErrorRes {
+func (userPostgres *UserPostgres) DeleteUser(id int) *errors.AppError {
 	query := "DELETE FROM USERS WHERE id = $1"
 
 	result, err := userPostgres.dbSql.Exec(query, id)
 	if err != nil {
-		return &errors.ErrorRes{Code: http.StatusInternalServerError, Message: err.Error()}
+		return errors.New(errors.UnknownError, err.Error())
 	}
 
 	if row, _ := result.RowsAffected(); row == 0 {
-		return &errors.ErrorRes{Code: http.StatusNotFound, Message: fmt.Sprintf("user with Id = %d not exist", id)}
+		return errors.New(errors.NotFound, fmt.Sprintf("user with Id = %d not exist", id))
 	}
 
 	return nil
 }
 
-func (userPostgres *UserPostgres) FindUserByActivateLink(activateLink string) (int, *errors.ErrorRes) {
+func (userPostgres *UserPostgres) FindUserByActivateLink(activateLink string) (int, *errors.AppError) {
 	query := "SELECT id FROM USERS WHERE activateLink = $1"
 
 	var id int
 	if err := userPostgres.dbSql.Get(&id, query, activateLink); err != nil {
 		if err == sql.ErrNoRows {
-			return 0, &errors.ErrorRes{Code: http.StatusBadRequest, Message: fmt.Sprintf("user with Id = %d not exist", id)}
+			return 0, errors.New(errors.NotFound, fmt.Sprintf("user with activateLink = %s not exist", activateLink))
 		}
-		return 0, &errors.ErrorRes{Code: http.StatusInternalServerError, Message: err.Error()}
+		return 0, errors.New(errors.UnknownError, err.Error())
 	}
 
 	return id, nil
@@ -146,29 +145,29 @@ func (userPostgres *UserPostgres) FindAll() ([]*model.FindUsers, error) {
 	return users, nil
 }
 
-func (userPostgres *UserPostgres) FindById(id int) (*model.FindUsers, *errors.ErrorRes) {
+func (userPostgres *UserPostgres) FindById(id int) (*model.FindUsers, *errors.AppError) {
 	query := "SELECT id, nickName, email, firstName, lastName, birthDate, role, isBanned, channelsCount, createTimestamp FROM USERS WHERE id = $1"
 
 	var user model.FindUsers
 	if err := userPostgres.dbSql.Get(&user, query, id); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &errors.ErrorRes{Code: http.StatusNotFound, Message: fmt.Sprintf("user with Id = %d not exist", id)}
+			return nil, errors.New(errors.NotFound, fmt.Sprintf("user with Id = %d not exist", id))
 		}
-		return nil, &errors.ErrorRes{Code: http.StatusInternalServerError, Message: err.Error()}
+		return nil, errors.New(errors.UnknownError, err.Error())
 	}
 
 	return &user, nil
 }
 
-func (userPostgres *UserPostgres) FindNickNameById(id int) (string, *errors.ErrorRes) {
+func (userPostgres *UserPostgres) FindNickNameById(id int) (string, *errors.AppError) {
 	query := "SELECT nickName FROM USERS WHERE id = $1"
 
 	var nickName string
 	if err := userPostgres.dbSql.Get(&nickName, query, id); err != nil {
 		if err == sql.ErrNoRows {
-			return "", &errors.ErrorRes{Code: http.StatusNotFound, Message: fmt.Sprintf("user with Id = %d not exist", id)}
+			return "", errors.New(errors.NotFound, fmt.Sprintf("user with Id = %d not exist", id))
 		}
-		return "", &errors.ErrorRes{Code: http.StatusInternalServerError, Message: err.Error()}
+		return "", errors.New(errors.UnknownError, err.Error())
 	}
 
 	return nickName, nil
@@ -185,33 +184,33 @@ func (userPostgres *UserPostgres) CheckIsUnique(key string, value string) (bool,
 	return !exist, nil
 }
 
-func (userPostgres *UserPostgres) GetPasswordByUserId(userId int) (string, *errors.ErrorRes) {
+func (userPostgres *UserPostgres) GetPasswordByUserId(userId int) (string, *errors.AppError) {
 	query := "SELECT password FROM USERS WHERE id = $1"
 
 	var password string
 	if err := userPostgres.dbSql.Get(&password, query, userId); err != nil {
 		if err == sql.ErrNoRows {
-			return "", &errors.ErrorRes{Code: http.StatusNotFound, Message: fmt.Sprintf("user with Id = %d not exist", userId)}
+			return "", errors.New(errors.NotFound, fmt.Sprintf("user with Id = %d not exist", userId))
 		}
-		return "", &errors.ErrorRes{Code: http.StatusInternalServerError, Message: err.Error()}
+		return "", errors.New(errors.UnknownError, err.Error())
 	}
 
 	return password, nil
 }
 
-func (userPostgres *UserPostgres) ChangeChannelsCountOfUser(userId int, isIncrement bool) *errors.ErrorRes {
+func (userPostgres *UserPostgres) ChangeChannelsCountOfUser(transaction *sql.Tx, userId int, isIncrement bool) *errors.AppError {
 	query := "UPDATE USERS SET channelsCount = channelsCount + $1 WHERE id = $2"
 	delta := 1
 	if !isIncrement {
 		delta = -1
 	}
 
-	result, err := userPostgres.dbSql.Exec(query, delta, userId)
+	result, err := transaction.Exec(query, delta, userId)
 	if err != nil {
-		return &errors.ErrorRes{Code: http.StatusInternalServerError, Message: err.Error()}
+		return errors.New(errors.UnknownError, err.Error())
 	}
 	if row, _ := result.RowsAffected(); row == 0 {
-		return &errors.ErrorRes{Code: http.StatusNotFound, Message: fmt.Sprintf("user with Id = %d not exist", userId)}
+		return errors.New(errors.NotFound, fmt.Sprintf("user with Id = %d not exist", userId))
 	}
 
 	return nil

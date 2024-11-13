@@ -14,12 +14,12 @@ func (handler *Handler) createChannel(ctx *gin.Context) {
 	var input *model.CreateChannel
 
 	if err := ctx.BindJSON(&input); err != nil {
-		errors.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		ErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err := handler.validators.Validate.Struct(input); err != nil {
-		errors.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		ErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -28,7 +28,17 @@ func (handler *Handler) createChannel(ctx *gin.Context) {
 
 	channelId, err := handler.services.Channel.CreateChannel(int(userId), input.Title, input.Description)
 	if err != nil {
-		errors.NewErrorResponse(ctx, err.Code, err.Message)
+		var code int
+		switch err.Type {
+		case errors.NotFound:
+			code = http.StatusBadRequest
+		case errors.NotUnique:
+			code = http.StatusConflict
+		default:
+			code = http.StatusInternalServerError
+		}
+
+		ErrorResponse(ctx, code, err.Message)
 		return
 	}
 
@@ -39,12 +49,12 @@ func (handler *Handler) editChannel(ctx *gin.Context) {
 	var input *model.UpdateChannel
 
 	if err := ctx.BindJSON(&input); err != nil {
-		errors.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		ErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err := handler.validators.Validate.Struct(input); err != nil {
-		errors.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		ErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -56,7 +66,17 @@ func (handler *Handler) editChannel(ctx *gin.Context) {
 		"title":       input.UpdatingObject.Title,
 		"description": input.UpdatingObject.Description,
 	}); err != nil {
-		errors.NewErrorResponse(ctx, err.Code, err.Message)
+		var code int
+		switch err.Type {
+		case errors.NotFound:
+			code = http.StatusBadRequest
+		case errors.NotUnique:
+			code = http.StatusConflict
+		default:
+			code = http.StatusInternalServerError
+		}
+
+		ErrorResponse(ctx, code, err.Message)
 		return
 	}
 
@@ -67,18 +87,26 @@ func (handler *Handler) subscribe(ctx *gin.Context) {
 	var input *model.SubscribeRequest
 
 	if err := ctx.BindJSON(&input); err != nil {
-		errors.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		ErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err := handler.validators.Validate.Struct(input); err != nil {
-		errors.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		ErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	response, err := handler.services.ToggleSubscribe(input.UserId, input.ChannelId)
 	if err != nil {
-		errors.NewErrorResponse(ctx, err.Code, err.Message)
+		var code int
+		switch err.Type {
+		case errors.NotFound:
+			code = http.StatusNotFound
+		default:
+			code = http.StatusInternalServerError
+		}
+
+		ErrorResponse(ctx, code, err.Message)
 	}
 
 	ctx.JSON(http.StatusOK, response)
@@ -89,12 +117,20 @@ func (handler *Handler) removeChannel(ctx *gin.Context) {
 		return ctx.Param(key)
 	})
 	if err != nil {
-		errors.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		ErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err := handler.services.DeleteChannel(id); err != nil {
-		errors.NewErrorResponse(ctx, err.Code, err.Message)
+		var code int
+		switch err.Type {
+		case errors.NotFound:
+			code = http.StatusNotFound
+		default:
+			code = http.StatusInternalServerError
+		}
+
+		ErrorResponse(ctx, code, err.Message)
 		return
 	}
 
@@ -108,19 +144,27 @@ func (handler *Handler) getOneChannel(ctx *gin.Context) {
 
 	userId, err := handler.GetIdFromQuery("user_id", 0, getQuery)
 	if err != nil {
-		errors.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		ErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	channelId, err := handler.GetIdFromQuery("channel_id", 1, getQuery)
 	if err != nil {
-		errors.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		ErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	channel, errRes := handler.services.Channel.GetChannelById(userId, channelId)
-	if errRes != nil {
-		errors.NewErrorResponse(ctx, errRes.Code, errRes.Message)
+	channel, appErr := handler.services.Channel.GetChannelById(userId, channelId)
+	if appErr != nil {
+		var code int
+		switch appErr.Type {
+		case errors.NotFound:
+			code = http.StatusNotFound
+		default:
+			code = http.StatusInternalServerError
+		}
+
+		ErrorResponse(ctx, code, appErr.Message)
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
@@ -138,13 +182,21 @@ func (handler *Handler) getAllChannelsOfUser(ctx *gin.Context) {
 		return ctx.Param(key)
 	})
 	if err != nil {
-		errors.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		ErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	channels, errRes := handler.services.Channel.GetAllChannelsOfUser(userId)
-	if errRes != nil {
-		errors.NewErrorResponse(ctx, errRes.Code, errRes.Message)
+	channels, appErr := handler.services.Channel.GetAllChannelsOfUser(userId)
+	if appErr != nil {
+		var code int
+		switch appErr.Type {
+		case errors.EmptyField:
+			code = http.StatusNoContent
+		default:
+			code = http.StatusInternalServerError
+		}
+
+		ErrorResponse(ctx, code, appErr.Message)
 		return
 	}
 
@@ -156,13 +208,21 @@ func (handler *Handler) getSubscribersList(ctx *gin.Context) {
 		return ctx.Param(key)
 	})
 	if err != nil {
-		errors.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		ErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	idLists, errRes := handler.services.Channel.GetAllIdListOfUser(userId)
-	if errRes != nil {
-		errors.NewErrorResponse(ctx, errRes.Code, errRes.Message)
+	idLists, appErr := handler.services.Channel.GetAllIdListOfUser(userId)
+	if appErr != nil {
+		var code int
+		switch appErr.Type {
+		case errors.EmptyField:
+			code = http.StatusNoContent
+		default:
+			code = http.StatusInternalServerError
+		}
+
+		ErrorResponse(ctx, code, appErr.Message)
 		return
 	}
 

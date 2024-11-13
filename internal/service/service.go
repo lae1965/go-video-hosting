@@ -9,21 +9,21 @@ import (
 )
 
 type Users interface {
-	CreateUser(user model.Users) (*model.UserCreateResponse, *errors.ErrorRes)
-	Login(user model.Users) (*model.UserResponse, *errors.ErrorRes)
+	CreateUser(user model.Users) (*model.UserCreateResponse, *errors.AppError)
+	Login(user model.Users) (*model.UserResponse, *errors.AppError)
 	Logout(refreshTokenId int) error
-	Refresh(refreshToken string) (*model.UserResponse, *errors.ErrorRes)
-	SaveAvatar(id int, fileName string) *errors.ErrorRes
-	GetAvatar(id int, sendChunk func(int64, string, []byte) error) *errors.ErrorRes
-	DeleteAvatar(id int) *errors.ErrorRes
-	UpdateUser(id int, data map[string]interface{}) *errors.ErrorRes
-	DeleteUser(id int) *errors.ErrorRes
-	Activate(activateLink string) *errors.ErrorRes
+	Refresh(refreshToken string) (*model.UserResponse, *errors.AppError)
+	SaveAvatar(id int, fileName string) *errors.AppError
+	GetAvatar(id int, sendChunk func(int64, string, []byte) error) *errors.AppError
+	DeleteAvatar(id int) *errors.AppError
+	UpdateUser(id int, data map[string]interface{}) *errors.AppError
+	DeleteUser(id int) *errors.AppError
+	Activate(activateLink string) *errors.AppError
 	FindAll() ([]*model.FindUsers, error)
-	FindById(id int) (*model.FindUsers, *errors.ErrorRes)
-	FindNickNameById(id int) (string, *errors.ErrorRes)
+	FindById(id int) (*model.FindUsers, *errors.AppError)
+	FindNickNameById(id int) (string, *errors.AppError)
 	CheckIsNickNameEmailUnique(nickName string, email string) (bool, string, error)
-	ChangePassword(userId int, refreshTokenId int, oldPassword string, newPassword string) *errors.ErrorRes
+	ChangePassword(userId int, refreshTokenId int, oldPassword string, newPassword string) *errors.AppError
 }
 
 type Token interface {
@@ -35,13 +35,13 @@ type Token interface {
 }
 
 type Channel interface {
-	CreateChannel(userId int, title string, description string) (int, *errors.ErrorRes)
-	UpdateChannel(userId int, channelId int, data map[string]string) *errors.ErrorRes
-	DeleteChannel(channelId int) *errors.ErrorRes
-	ToggleSubscribe(userId, channelId int) (*model.SubscribeRespose, *errors.ErrorRes)
-	GetChannelById(userId, channelId int) (*model.GetChannelResponse, *errors.ErrorRes)
-	GetAllChannelsOfUser(userId int) ([]*model.GetAllChannelsResponse, *errors.ErrorRes)
-	GetAllIdListOfUser(userId int) ([]string, *errors.ErrorRes)
+	CreateChannel(userId int, title string, description string) (int, *errors.AppError)
+	UpdateChannel(userId int, channelId int, data map[string]string) *errors.AppError
+	DeleteChannel(channelId int) *errors.AppError
+	ToggleSubscribe(userId, channelId int) (*model.SubscribeRespose, *errors.AppError)
+	GetChannelById(userId, channelId int) (*model.GetChannelResponse, *errors.AppError)
+	GetAllChannelsOfUser(userId int) ([]*model.GetAllChannelsResponse, *errors.AppError)
+	GetAllIdListOfUser(userId int) ([]string, *errors.AppError)
 }
 
 type Service struct {
@@ -54,6 +54,6 @@ func NewService(db *database.Database, grpcClient grpcclient.FilesGRPCClient) *S
 	return &Service{
 		Users:   NewUserService(db.Users, NewTokenService(db.Token), db.BeginTransaction, grpcClient),
 		Token:   NewTokenService(db.Token),
-		Channel: NewChannelService(db.Channel, db.Users),
+		Channel: NewChannelService(db.Channel, db.Users, db.BeginTransaction),
 	}
 }
