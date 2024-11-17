@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"cnb.cool/ordermap/ordermap"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 )
@@ -150,7 +151,6 @@ func (handler *Handler) editUser(ctx *gin.Context) {
 	id, err := handler.GetIdFromQuery("id", 1, func(key string) string {
 		return ctx.Param(key)
 	})
-
 	if err != nil {
 		ErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
@@ -187,7 +187,12 @@ func (handler *Handler) editUser(ctx *gin.Context) {
 		}
 	}
 
-	if appErr := handler.services.UpdateUser(id, user); appErr != nil {
+	omUser := ordermap.New()
+	for key, value := range user {
+		omUser.Store(key, value)
+	}
+
+	if appErr := handler.services.UpdateUser(id, omUser); appErr != nil {
 		var code int
 		switch appErr.Type {
 		case errors.NotUnique:

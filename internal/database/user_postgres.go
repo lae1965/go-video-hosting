@@ -7,6 +7,7 @@ import (
 	"go-video-hosting/internal/model"
 	"strings"
 
+	"cnb.cool/ordermap/ordermap"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 )
@@ -76,15 +77,17 @@ func (userPostgres *UserPostgres) GetAvatarByUserId(userId int) (string, *errors
 	return avatar, nil
 }
 
-func (userPostgres *UserPostgres) UpdateUser(id int, data map[string]interface{}) *errors.AppError {
+func (userPostgres *UserPostgres) UpdateUser(id int, data *ordermap.OrderMap) *errors.AppError {
 	clauses := []string{}
 	args := []interface{}{}
 	i := 1
-	for key, value := range data {
+
+	data.Range(func(key, value interface{}) bool {
 		clauses = append(clauses, fmt.Sprintf("%s = $%d", key, i))
 		args = append(args, value)
 		i++
-	}
+		return true
+	})
 	args = append(args, id)
 
 	query := fmt.Sprintf("UPDATE USERS SET %s WHERE id = $%d", strings.Join(clauses, ", "), i)
