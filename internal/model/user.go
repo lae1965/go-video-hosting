@@ -15,33 +15,33 @@ const (
 )
 
 type Users struct {
-	Id              int       `json:"id"`
-	NickName        string    `json:"nickName"`
-	Email           string    `json:"email" validate:"required,email"`
-	Password        string    `json:"password" validate:"password"`
-	FirstName       string    `json:"firstName"`
-	LastName        string    `json:"lastName"`
-	BirthDate       string    `json:"birthDate"`
-	Avatar          string    `json:"avatar"`
-	Role            Role      `json:"role"`
-	ActivateLink    string    `json:"activateLink"`
-	IsActivate      bool      `json:"isActivate"`
-	IsBanned        bool      `json:"isBanned"`
-	ChannelsCount   int       `json:"channelsCount"`
-	CreateTimestamp time.Time `json:"createTimestamp"`
+	Id              int       `db:"id" json:"id"`
+	NickName        string    `db:"nickname" json:"nickName"`
+	Email           string    `db:"email" json:"email" validate:"required,email"`
+	Password        string    `db:"password" json:"password" validate:"password"`
+	FirstName       string    `db:"firstname" json:"firstName"`
+	LastName        string    `db:"lastname" json:"lastName"`
+	BirthDate       string    `db:"birthdate" json:"birthDate"`
+	Avatar          string    `db:"avatar" json:"avatar"`
+	Role            Role      `db:"role" json:"role"`
+	ActivateLink    string    `db:"activatelink" json:"activateLink"`
+	IsActivate      bool      `db:"isactivate" json:"isActivate"`
+	IsBanned        bool      `db:"isbanned" json:"isBanned"`
+	ChannelsCount   int       `db:"channelscount" json:"channelsCount"`
+	CreateTimestamp time.Time `db:"createtimestamp" json:"createTimestamp"`
 }
 
 type FindUsers struct {
-	Id              int       `json:"id"`
-	NickName        string    `json:"nickName"`
-	Email           string    `json:"email"`
-	FirstName       string    `json:"firstName"`
-	LastName        string    `json:"lastName"`
-	BirthDate       string    `json:"birthDate"`
-	Role            Role      `json:"role"`
-	IsBanned        bool      `json:"isBanned"`
-	ChannelsCount   int       `json:"channelsCount"`
-	CreateTimestamp time.Time `json:"createTimestamp"`
+	Id              int       `db:"id" json:"id"`
+	NickName        string    `db:"nickname" json:"nickName"`
+	Email           string    `db:"email" json:"email"`
+	FirstName       string    `db:"firstname" json:"firstName"`
+	LastName        string    `db:"lastname" json:"lastName"`
+	BirthDate       string    `db:"birthdate" json:"birthDate"`
+	Role            Role      `db:"role" json:"role"`
+	IsBanned        bool      `db:"isbanned" json:"isBanned"`
+	ChannelsCount   int       `db:"channelscount" json:"channelsCount"`
+	CreateTimestamp time.Time `db:"createtimestamp" json:"createTimestamp"`
 }
 
 type ChangePasswordRequest struct {
