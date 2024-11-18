@@ -2,20 +2,20 @@ package database
 
 import (
 	"database/sql"
-	"go-video-hosting/pkg/model"
+	"go-video-hosting/internal/model"
 
 	"github.com/jmoiron/sqlx"
 )
 
-type TokenPosrgres struct {
+type TokenPostgres struct {
 	dbSql *sqlx.DB
 }
 
-func NewTokenPostgres(dbSql *sqlx.DB) *TokenPosrgres {
-	return &TokenPosrgres{dbSql: dbSql}
+func NewTokenPostgres(dbSql *sqlx.DB) *TokenPostgres {
+	return &TokenPostgres{dbSql: dbSql}
 }
 
-func (tokenPostgres *TokenPosrgres) CreateToken(transaction *sql.Tx, token model.Token) (int, error) {
+func (tokenPostgres *TokenPostgres) CreateToken(transaction *sql.Tx, token model.Token) (int, error) {
 	var row *sql.Row
 	query := "INSERT INTO TOKEN (token, userId) values ($1, $2) RETURNING id"
 
@@ -32,7 +32,7 @@ func (tokenPostgres *TokenPosrgres) CreateToken(transaction *sql.Tx, token model
 	return id, nil
 }
 
-func (tokenPostgres *TokenPosrgres) UpdateToken(tokenId int, token string) error {
+func (tokenPostgres *TokenPostgres) UpdateToken(tokenId int, token string) error {
 	query := "UPDATE TOKEN SET token=$1 WHERE id=$2;"
 
 	_, err := tokenPostgres.dbSql.Exec(query, token, tokenId)
@@ -40,14 +40,14 @@ func (tokenPostgres *TokenPosrgres) UpdateToken(tokenId int, token string) error
 	return err
 }
 
-func (tokenPostgres *TokenPosrgres) RemoveToken(tokenId int) error {
+func (tokenPostgres *TokenPostgres) RemoveToken(tokenId int) error {
 	query := "DELETE FROM TOKEN WHERE id=$1"
 	_, err := tokenPostgres.dbSql.Exec(query, tokenId)
 
 	return err
 }
 
-func (tokenPostgres *TokenPosrgres) GetTokenIdByToken(token string) (int, error) {
+func (tokenPostgres *TokenPostgres) GetTokenIdByToken(token string) (int, error) {
 	query := "SELECT id FROM TOKEN WHERE token=$1"
 
 	var id int
@@ -59,7 +59,7 @@ func (tokenPostgres *TokenPosrgres) GetTokenIdByToken(token string) (int, error)
 	return id, nil
 }
 
-func (tokenPostgres *TokenPosrgres) DeleteTokenFromOtherDevices(userId int, refreshTokenId int) error {
+func (tokenPostgres *TokenPostgres) DeleteTokenFromOtherDevices(userId int, refreshTokenId int) error {
 	query := "DELETE FROM TOKEN WHERE userId = $1 AND id != $2"
 
 	_, err := tokenPostgres.dbSql.Exec(query, userId, refreshTokenId)

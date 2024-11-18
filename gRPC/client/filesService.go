@@ -19,7 +19,7 @@ type FilesGRPCClient struct {
 
 var chunkSize int64
 
-func NewFilesGRPCClient(gprcServer *FilesGRPCServer) *FilesGRPCClient {
+func New(gprcServer *FilesGRPCServer) *FilesGRPCClient {
 	chunkSize = viper.GetInt64("gRPC.chunksize")
 
 	return &FilesGRPCClient{

@@ -5,10 +5,9 @@ import (
 	"database/sql"
 	"fmt"
 	grpcclient "go-video-hosting/gRPC/client"
+	"go-video-hosting/internal/database"
 	"go-video-hosting/internal/errors"
-	"go-video-hosting/pkg/database"
-	"go-video-hosting/pkg/model"
-	"net/http"
+	"go-video-hosting/internal/model"
 
 	"os"
 	"strings"
@@ -37,14 +36,15 @@ func NewUserService(dbUser database.Users, token Token, CreateTransaction Callba
 	}
 }
 
-func (userService *UserService) CreateUser(user model.Users) (*model.UserCreateResponse, *errors.ErrorRes) {
+func (userService *UserService) CreateUser(user model.Users) (*model.UserCreateResponse, *errors.AppError) {
+	var appErr *errors.AppError
 	transaction, err := userService.createTransaction()
 	if err != nil {
-		return nil, &errors.ErrorRes{Code: http.StatusInternalServerError, Message: fmt.Sprintf("failed create transaction: %s", err.Error())}
+		return nil, errors.New(errors.UnknownError, fmt.Sprintf("failed create transaction: %s", err.Error()))
 	}
 
 	defer func() {
-		if err != nil {
+		if err != nil || appErr != nil {
 			transaction.Rollback()
 		} else {
 			transaction.Commit()
@@ -53,26 +53,27 @@ func (userService *UserService) CreateUser(user model.Users) (*model.UserCreateR
 
 	hash, err := userService.GenerateHashPassword(user.Password)
 	if err != nil {
-		return nil, &errors.ErrorRes{Code: http.StatusInternalServerError, Message: fmt.Sprintf("failed generate hashPassword: %s", err.Error())}
+		return nil, errors.New(errors.UnknownError, fmt.Sprintf("failed generate hashPassword: %s", err.Error()))
 	}
 	user.Password = hash
 	user.ActivateLink = uuid.New().String()
 
-	userId, errRes := userService.dbUser.CreateUser(transaction, user)
-	if errRes != nil {
-		return nil, &errors.ErrorRes{Code: errRes.Code, Message: fmt.Sprintf("failed saving new user: %s", errRes.Message)}
+	userId, appErr := userService.dbUser.CreateUser(transaction, user)
+	if appErr != nil {
+		appErr.Message = fmt.Sprintf("failed saving new user: %s", appErr.Message)
+		return nil, appErr
 	}
 
 	user.Id = userId
 
 	tokenResponse, err := userService.token.CreateTokens(transaction, user, 0)
 	if err != nil {
-		return nil, &errors.ErrorRes{Code: http.StatusInternalServerError, Message: fmt.Sprintf("failed creating tokens: %s", err.Error())}
+		return nil, errors.New(errors.UnknownError, fmt.Sprintf("failed creating tokens: %s", err.Error()))
 	}
 
 	err = SendMail(user.Email, user.ActivateLink)
 	if err != nil {
-		return nil, &errors.ErrorRes{Code: http.StatusInternalServerError, Message: fmt.Sprintf("failed sending email message: %s", err.Error())}
+		return nil, errors.New(errors.UnknownError, fmt.Sprintf("failed sending email message: %s", err.Error()))
 	}
 
 	return &model.UserCreateResponse{
@@ -107,19 +108,19 @@ func (userService *UserService) GenerateHashPassword(password string) (string, e
 	return string(hash), err
 }
 
-func (userService *UserService) Login(user model.Users) (*model.UserResponse, *errors.ErrorRes) {
+func (userService *UserService) Login(user model.Users) (*model.UserResponse, *errors.AppError) {
 	newUser, err := userService.dbUser.GetUserByEmail(user.Email)
 	if err != nil {
-		return nil, &errors.ErrorRes{Code: http.StatusBadRequest, Message: fmt.Sprintf("user with email %s not found: %s", user.Email, err.Error())}
+		return nil, errors.New(errors.NotFound, fmt.Sprintf("user with email %s not found: %s", user.Email, err.Error()))
 	}
 
 	if err = bcrypt.CompareHashAndPassword([]byte(newUser.Password), []byte(user.Password)); err != nil {
-		return nil, &errors.ErrorRes{Code: http.StatusUnauthorized, Message: fmt.Sprintf("wrong password: %s", err.Error())}
+		return nil, errors.New(errors.Unauthorization, fmt.Sprintf("wrong password: %s", err.Error()))
 	}
 
 	tokenResponse, err := userService.token.CreateTokens(nil, *newUser, 0)
 	if err != nil {
-		return nil, &errors.ErrorRes{Code: http.StatusInternalServerError, Message: err.Error()}
+		return nil, errors.New(errors.UnknownError, err.Error())
 	}
 
 	return &model.UserResponse{
@@ -138,25 +139,25 @@ func (userService *UserService) Logout(refreshTokenId int) error {
 	return nil
 }
 
-func (userService *UserService) Refresh(refreshToken string) (*model.UserResponse, *errors.ErrorRes) {
+func (userService *UserService) Refresh(refreshToken string) (*model.UserResponse, *errors.AppError) {
 	userId, err := userService.token.ValidateToken(refreshToken, os.Getenv("REFRESH_KEY"))
 	if err != nil {
-		return nil, &errors.ErrorRes{Code: http.StatusUnauthorized, Message: err.Error()}
+		return nil, errors.New(errors.Unauthorization, err.Error())
 	}
 
 	refreshTokenId, err := userService.token.GetTokenIdByToken(refreshToken)
 	if err != nil {
-		return nil, &errors.ErrorRes{Code: http.StatusUnauthorized, Message: fmt.Sprintf("refreshtoken is not found in DB: %s", err.Error())}
+		return nil, errors.New(errors.Unauthorization, fmt.Sprintf("refreshtoken is not found in DB: %s", err.Error()))
 	}
 
-	userFromDB, err := userService.dbUser.GetUserById(userId)
+	userFromDB, err := userService.dbUser.GetUserForRefreshById(userId)
 	if err != nil {
-		return nil, &errors.ErrorRes{Code: http.StatusUnauthorized, Message: fmt.Sprintf("user with such refreshtoken is not exist: %s", err.Error())}
+		return nil, errors.New(errors.Unauthorization, fmt.Sprintf("user with such refreshtoken is not exist: %s", err.Error()))
 	}
 
 	tokenResponse, err := userService.token.CreateTokens(nil, *userFromDB, refreshTokenId)
 	if err != nil {
-		return nil, &errors.ErrorRes{Code: http.StatusInternalServerError, Message: err.Error()}
+		return nil, errors.New(errors.Unauthorization, err.Error())
 	}
 
 	return &model.UserResponse{
@@ -170,20 +171,20 @@ func (userService *UserService) Refresh(refreshToken string) (*model.UserRespons
 	}, nil
 }
 
-func (userService *UserService) SaveAvatar(id int, fileName string) *errors.ErrorRes {
-	oldFileName, errRes := userService.dbUser.GetAvatarByUserId(id)
-	if errRes != nil {
-		return &errors.ErrorRes{Code: errRes.Code, Message: fmt.Sprintf("can't get old avatarFileName: %s", errRes.Message)}
+func (userService *UserService) SaveAvatar(id int, fileName string) *errors.AppError {
+	oldFileName, appErr := userService.dbUser.GetAvatarByUserId(id)
+	if appErr != nil {
+		return errors.New(appErr.Type, fmt.Sprintf("can't get old avatarFileName: %s", appErr.Message))
 	}
 
 	newFileName, err := userService.grpcClient.SendToGRPCServer(context.Background(), fileName)
 	if err != nil {
-		return &errors.ErrorRes{Code: http.StatusInternalServerError, Message: fmt.Sprintf("can't save file to gRPC-server: %s", err.Error())}
+		return errors.New(errors.UnknownError, fmt.Sprintf("can't save file to gRPC-server: %s", err.Error()))
 	}
 
 	if err := userService.dbUser.UpdateUser(id, map[string]interface{}{"avatar": newFileName}); err != nil {
 		userService.grpcClient.DeleteFromGRPCServer(context.Background(), newFileName)
-		return &errors.ErrorRes{Code: err.Code, Message: fmt.Sprintf("can't save fileName to database: %s", err.Message)}
+		return errors.New(err.Type, fmt.Sprintf("can't save fileName to database: %s", err.Message))
 	}
 
 	if oldFileName != "" {
@@ -193,73 +194,79 @@ func (userService *UserService) SaveAvatar(id int, fileName string) *errors.Erro
 	return nil
 }
 
-func (userService *UserService) GetAvatar(id int, sendChunk func(int64, string, []byte) error) *errors.ErrorRes {
-	avatarFileName, errRes := userService.dbUser.GetAvatarByUserId(id)
-	if errRes != nil {
-		return &errors.ErrorRes{Code: http.StatusInternalServerError, Message: fmt.Sprintf("can't get avatarFileName: %s", errRes.Message)}
+func (userService *UserService) GetAvatar(id int, sendChunk func(int64, string, []byte) error) *errors.AppError {
+	avatarFileName, appErr := userService.dbUser.GetAvatarByUserId(id)
+	if appErr != nil {
+		appErr.Message = fmt.Sprintf("can't get avatarFileName: %s", appErr.Message)
+		return appErr
 	}
 
 	if avatarFileName == "" {
-		return &errors.ErrorRes{Code: http.StatusNoContent, Message: "this user has no avatar"}
+		return errors.New(errors.EmptyField, "this user has no avatar")
 	}
 
 	if err := userService.grpcClient.GetFromGRPCServer(context.Background(), avatarFileName, sendChunk); err != nil {
-		return &errors.ErrorRes{Code: http.StatusInternalServerError, Message: fmt.Sprintf("can't get avatar: %s", err.Error())}
+		return errors.New(errors.UnknownError, fmt.Sprintf("can't get avatar: %s", err.Error()))
 	}
 
 	return nil
 }
 
-func (userService *UserService) DeleteAvatar(id int) *errors.ErrorRes {
+func (userService *UserService) DeleteAvatar(id int) *errors.AppError {
 	avatarFileName, err := userService.dbUser.GetAvatarByUserId(id)
 	if err != nil {
-		return &errors.ErrorRes{Code: err.Code, Message: fmt.Sprintf("can't get avatarFileName: %s", err.Message)}
+		return errors.New(err.Type, fmt.Sprintf("can't get avatarFileName: %s", err.Message))
 	}
 
 	if avatarFileName == "" {
-		return &errors.ErrorRes{Code: http.StatusNoContent, Message: "this user has no avatar"}
+		return errors.New(errors.EmptyField, "this user has no avatar")
+	}
+
+	if err := userService.dbUser.UpdateUser(id, map[string]interface{}{"avatar": ""}); err != nil {
+		return errors.New(err.Type, fmt.Sprintf("can't delete avatarFileName from DB: %s", err.Message))
 	}
 
 	if err := userService.grpcClient.DeleteFromGRPCServer(context.Background(), avatarFileName); err != nil {
-		return &errors.ErrorRes{Code: http.StatusInternalServerError, Message: fmt.Sprintf("can't delete avatar from gRPC-server: %s", err.Error())}
+		return errors.New(errors.UnknownError, fmt.Sprintf("can't delete avatar from gRPC-server: %s", err.Error()))
 	}
-
-	userService.dbUser.UpdateUser(id, map[string]interface{}{"avatar": ""})
 
 	return nil
 }
 
-func (userService *UserService) UpdateUser(id int, data map[string]interface{}) *errors.ErrorRes {
+func (userService *UserService) UpdateUser(id int, data map[string]interface{}) *errors.AppError {
 	return userService.dbUser.UpdateUser(id, data)
 }
 
-func (userService *UserService) DeleteUser(id int) *errors.ErrorRes {
+func (userService *UserService) DeleteUser(id int) *errors.AppError {
+	//TODO - удалить все видео user'а и аватар с gRPC - сервера
 	return userService.dbUser.DeleteUser(id)
 }
 
-func (userService *UserService) Activate(activateLink string) *errors.ErrorRes {
-	userId, err := userService.dbUser.FindUserByActivateLink(activateLink)
+func (userService *UserService) Activate(activateLink string) *errors.AppError {
+	userId, err := userService.dbUser.GetUserByActivateLink(activateLink)
 	if err != nil {
-		return &errors.ErrorRes{Code: err.Code, Message: err.Message}
+		err.Message = fmt.Sprintf("can not find user by activate link: %s", err.Message)
+		return err
 	}
 
 	if err := userService.dbUser.UpdateUser(userId, map[string]interface{}{"isActivate": true}); err != nil {
-		return &errors.ErrorRes{Code: err.Code, Message: err.Message}
+		err.Message = fmt.Sprintf("can not update field isActivate: %s", err.Message)
+		return err
 	}
 
 	return nil
 }
 
-func (userService *UserService) FindAll() ([]*model.FindUsers, error) {
-	return userService.dbUser.FindAll()
+func (userService *UserService) GetAll() ([]*model.FindUsers, error) {
+	return userService.dbUser.GetAll()
 }
 
-func (userService *UserService) FindById(id int) (*model.FindUsers, *errors.ErrorRes) {
-	return userService.dbUser.FindById(id)
+func (userService *UserService) GetById(id int) (*model.FindUsers, *errors.AppError) {
+	return userService.dbUser.GetById(id)
 }
 
-func (userService *UserService) FindNickNameById(id int) (string, *errors.ErrorRes) {
-	return userService.dbUser.FindNickNameById(id)
+func (userService *UserService) GetNickNameById(id int) (string, *errors.AppError) {
+	return userService.dbUser.GetNickNameById(id)
 }
 
 func (userService *UserService) CheckIsNickNameEmailUnique(nickName string, email string) (bool, string, error) {
@@ -301,27 +308,29 @@ func (userService *UserService) CheckIsNickNameEmailUnique(nickName string, emai
 	return isEmailUnique && isNickNameUnique, message, nil
 }
 
-func (userService *UserService) ChangePassword(userId int, refreshTokenId int, oldPassword string, newPassword string) *errors.ErrorRes {
-	dbPassword, errRes := userService.dbUser.GetPasswordByUserId(userId)
-	if errRes != nil {
-		return &errors.ErrorRes{Code: errRes.Code, Message: errRes.Message}
+func (userService *UserService) ChangePassword(userId int, refreshTokenId int, oldPassword string, newPassword string) *errors.AppError {
+	dbPassword, appErr := userService.dbUser.GetPasswordByUserId(userId)
+	if appErr != nil {
+		appErr.Message = fmt.Sprintf("wrong getting old Password from db: %s", appErr.Message)
+		return appErr
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(dbPassword), []byte(oldPassword)); err != nil {
-		return &errors.ErrorRes{Code: http.StatusConflict, Message: fmt.Sprintf("wrong oldPassword: %s", err.Error())}
+		return errors.New(errors.NotEqual, fmt.Sprintf("wrong old Password: %s", err.Error()))
 	}
 
 	hashPassword, err := userService.GenerateHashPassword(newPassword)
 	if err != nil {
-		return &errors.ErrorRes{Code: http.StatusInternalServerError, Message: err.Error()}
+		return errors.New(errors.UnknownError, fmt.Sprintf("wrong generating hashPassword: %s", err.Error()))
 	}
 
 	if err := userService.dbUser.UpdateUser(userId, map[string]interface{}{"password": hashPassword}); err != nil {
-		return &errors.ErrorRes{Code: err.Code, Message: err.Message}
+		err.Message = fmt.Sprintf("wrong updating password in DB: %s", err.Message)
+		return err
 	}
 
 	if err := userService.token.DeleteTokenFromOtherDevices(userId, refreshTokenId); err != nil {
-		return &errors.ErrorRes{Code: http.StatusInternalServerError, Message: err.Error()}
+		return errors.New(errors.UnknownError, fmt.Sprintf("wrong logouting user from other devices: %s", err.Error()))
 	}
 
 	return nil

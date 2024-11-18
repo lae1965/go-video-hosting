@@ -2,11 +2,11 @@ package main
 
 import (
 	"go-video-hosting/gRPC/client"
+	"go-video-hosting/internal/database"
+	"go-video-hosting/internal/handler"
 	"go-video-hosting/internal/server"
-	"go-video-hosting/pkg/database"
-	"go-video-hosting/pkg/handler"
-	"go-video-hosting/pkg/service"
-	"go-video-hosting/pkg/validator"
+	"go-video-hosting/internal/service"
+	"go-video-hosting/internal/validator"
 	"os"
 
 	_ "github.com/lib/pq"
@@ -39,11 +39,11 @@ func main() {
 	}
 	defer grpcServer.Connection.Close()
 
-	grpcClient := grpcclient.NewFilesGRPCClient(grpcServer)
-	validate := validator.NewValidator()
-	db := database.NewDatabase(dbSql)
-	service := service.NewService(db, *grpcClient)
-	handlers := handler.NewHandler(service, validate)
+	grpcClient := grpcclient.New(grpcServer)
+	validate := validator.New()
+	db := database.New(dbSql)
+	service := service.New(db, *grpcClient)
+	handlers := handler.New(service, validate)
 	srv := new(server.Server)
 
 	port := viper.GetString("port")
