@@ -7,7 +7,7 @@ import (
 	"fmt"
 	appErrors "go-video-hosting/internal/errors"
 	"go-video-hosting/internal/model"
-	// "os"
+	"os"
 	"testing"
 	"time"
 
@@ -17,46 +17,30 @@ import (
 	"github.com/lib/pq"
 )
 
-// ! Почему-то с TestMain тесты не работают
-// var (
-// 	sqlxDB       *sqlx.DB
-// 	userPostgres *UserPostgres
-// 	mock         sqlmock.Sqlmock
-// )
+var (
+	sqlxDB       *sqlx.DB
+	userPostgres *UserPostgres
+	mock         sqlmock.Sqlmock
+)
 
-// func TestMain(m *testing.M) {
-// 	db, mk, err := sqlmock.New()
-// 	if err != nil {
-// 		fmt.Printf("an error %s occurred when opening a stub database connection", err)
-// 		return
-// 	}
-// 	defer db.Close()
-
-// 	mock = mk
-// 	sqlxDB = sqlx.NewDb(db, "postgres")
-// 	userPostgres = NewUserPostgres(sqlxDB)
-
-// 	exitCode := m.Run()
-
-// 	os.Exit(exitCode)
-// }
-
-func setupTest(t *testing.T) (*sql.DB, *sqlx.DB, *UserPostgres, sqlmock.Sqlmock) {
-	db, mock, err := sqlmock.New()
+func TestMain(m *testing.M) {
+	db, mk, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("an error %s occurred when opening a stub database connection", err)
+		fmt.Printf("an error %s occurred when opening a stub database connection", err)
+		return
 	}
-	sqlxDB := sqlx.NewDb(db, "postgres")
-	userPostgres := NewUserPostgres(sqlxDB)
+	defer db.Close()
 
-	return db, sqlxDB, userPostgres, mock
+	mock = mk
+	sqlxDB = sqlx.NewDb(db, "postgres")
+	userPostgres = NewUserPostgres(sqlxDB)
+
+	exitCode := m.Run()
+
+	os.Exit(exitCode)
 }
 
 func TestCreateUser(t *testing.T) {
-	t.Parallel()
-	db, sqlxDB, userPostgres, mock := setupTest(t)
-	defer db.Close()
-
 	user := model.Users{
 		NickName:     "testuser",
 		Email:        "test@example.com",
@@ -138,10 +122,6 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestGetUserByEmail(t *testing.T) {
-	t.Parallel()
-	db, _, userPostgres, mock := setupTest(t)
-	defer db.Close()
-
 	email := "test@example.com"
 	createTimestamp, _ := time.Parse(time.RFC3339, "2023-10-01T10:00:00Z")
 	mockFuncQuery := func() *sqlmock.ExpectedQuery {
@@ -197,10 +177,6 @@ func TestGetUserByEmail(t *testing.T) {
 }
 
 func TestGetUserToRefreshById(t *testing.T) {
-	t.Parallel()
-	db, _, userPostgres, mock := setupTest(t)
-	defer db.Close()
-
 	id := 1
 	mockFuncQuery := func() *sqlmock.ExpectedQuery {
 		return mock.ExpectQuery("SELECT id, nickName, email, role FROM USERS WHERE id=\\$1").
@@ -255,10 +231,6 @@ func TestGetUserToRefreshById(t *testing.T) {
 }
 
 func TestGetAvatarByUserId(t *testing.T) {
-	t.Parallel()
-	db, _, userPostgres, mock := setupTest(t)
-	defer db.Close()
-
 	userId := 1
 	mockFuncQuery := func() *sqlmock.ExpectedQuery {
 		return mock.ExpectQuery("SELECT avatar FROM USERS WHERE id=\\$1").
@@ -320,10 +292,6 @@ func TestGetAvatarByUserId(t *testing.T) {
 }
 
 func TestUpdateUser(t *testing.T) {
-	t.Parallel()
-	db, _, userPostgres, mock := setupTest(t)
-	defer db.Close()
-
 	mockFuncQuery := func(mockQuery string, mockArgs []driver.Value) *sqlmock.ExpectedExec {
 		return mock.ExpectExec(mockQuery).WithArgs(mockArgs...)
 	}
@@ -414,10 +382,6 @@ func TestUpdateUser(t *testing.T) {
 }
 
 func TestDeleteUser(t *testing.T) {
-	t.Parallel()
-	db, _, userPostgres, mock := setupTest(t)
-	defer db.Close()
-
 	id := 1
 	mockFuncQuery := func() *sqlmock.ExpectedExec {
 		return mock.ExpectExec("DELETE FROM USERS WHERE id = \\$1").
@@ -470,10 +434,6 @@ func TestDeleteUser(t *testing.T) {
 }
 
 func TestGetUserByActivateLink(t *testing.T) {
-	t.Parallel()
-	db, _, userPostgres, mock := setupTest(t)
-	defer db.Close()
-
 	activateLink := "activateLink"
 	mockFuncQuery := func() *sqlmock.ExpectedQuery {
 		return mock.ExpectQuery("SELECT id FROM USERS WHERE activateLink = \\$1").
@@ -532,10 +492,6 @@ func TestGetUserByActivateLink(t *testing.T) {
 }
 
 func TestGetAll(t *testing.T) {
-	t.Parallel()
-	db, _, userPostgres, mock := setupTest(t)
-	defer db.Close()
-
 	mockFuncQuery := func() *sqlmock.ExpectedQuery {
 		return mock.ExpectQuery("SELECT id, nickName, email, firstName, lastName, birthDate, role, isBanned, channelsCount, createTimestamp FROM USERS").
 			WithoutArgs()
@@ -589,10 +545,6 @@ func TestGetAll(t *testing.T) {
 }
 
 func TestGetById(t *testing.T) {
-	t.Parallel()
-	db, _, userPostgres, mock := setupTest(t)
-	defer db.Close()
-
 	id := 1
 	mockFuncQuery := func() *sqlmock.ExpectedQuery {
 		return mock.ExpectQuery("SELECT id, nickName, email, firstName, lastName, birthDate, role, isBanned, channelsCount, createTimestamp FROM USERS WHERE id = \\$1").
@@ -654,10 +606,6 @@ func TestGetById(t *testing.T) {
 }
 
 func TestGetNickNameById(t *testing.T) {
-	t.Parallel()
-	db, _, userPostgres, mock := setupTest(t)
-	defer db.Close()
-
 	id := 1
 	mockFuncQuery := func() *sqlmock.ExpectedQuery {
 		return mock.ExpectQuery("SELECT nickName FROM USERS WHERE id = \\$1").
@@ -717,10 +665,6 @@ func TestGetNickNameById(t *testing.T) {
 }
 
 func TestCheckIsUnique(t *testing.T) {
-	t.Parallel()
-	db, _, userPostgres, mock := setupTest(t)
-	defer db.Close()
-
 	key, value := "password", "secret"
 	mockFuncQuery := func() *sqlmock.ExpectedQuery {
 		return mock.ExpectQuery("SELECT EXISTS \\(SELECT 1 FROM USERS WHERE password = \\$1\\)").
@@ -779,10 +723,6 @@ func TestCheckIsUnique(t *testing.T) {
 }
 
 func TestChangeChannelsCountOfUser(t *testing.T) {
-	t.Parallel()
-	db, sqlxDB, userPostgres, mock := setupTest(t)
-	defer db.Close()
-
 	userId := 1
 	mockFuncQuery := func() *sqlmock.ExpectedExec {
 		return mock.ExpectExec("UPDATE USERS SET channelsCount = channelsCount \\+ \\$1 WHERE id = \\$2").
