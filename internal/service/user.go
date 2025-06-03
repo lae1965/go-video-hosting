@@ -12,6 +12,7 @@ import (
 	"os"
 	"strings"
 
+	"cnb.cool/ordermap/ordermap"
 	"github.com/go-gomail/gomail"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
@@ -182,7 +183,9 @@ func (userService *UserService) SaveAvatar(id int, fileName string) *errors.AppE
 		return errors.New(errors.UnknownError, fmt.Sprintf("can't save file to gRPC-server: %s", err.Error()))
 	}
 
-	if err := userService.dbUser.UpdateUser(id, map[string]interface{}{"avatar": newFileName}); err != nil {
+	om := ordermap.New()
+	om.Store("avatar", newFileName)
+	if err := userService.dbUser.UpdateUser(id, om); err != nil {
 		userService.grpcClient.DeleteFromGRPCServer(context.Background(), newFileName)
 		return errors.New(err.Type, fmt.Sprintf("can't save fileName to database: %s", err.Message))
 	}
@@ -222,7 +225,9 @@ func (userService *UserService) DeleteAvatar(id int) *errors.AppError {
 		return errors.New(errors.EmptyField, "this user has no avatar")
 	}
 
-	if err := userService.dbUser.UpdateUser(id, map[string]interface{}{"avatar": ""}); err != nil {
+	om := ordermap.New()
+	om.Store("avatar", "")
+	if err := userService.dbUser.UpdateUser(id, om); err != nil {
 		return errors.New(err.Type, fmt.Sprintf("can't delete avatarFileName from DB: %s", err.Message))
 	}
 
@@ -233,7 +238,7 @@ func (userService *UserService) DeleteAvatar(id int) *errors.AppError {
 	return nil
 }
 
-func (userService *UserService) UpdateUser(id int, data map[string]interface{}) *errors.AppError {
+func (userService *UserService) UpdateUser(id int, data *ordermap.OrderMap) *errors.AppError {
 	return userService.dbUser.UpdateUser(id, data)
 }
 
@@ -249,7 +254,9 @@ func (userService *UserService) Activate(activateLink string) *errors.AppError {
 		return err
 	}
 
-	if err := userService.dbUser.UpdateUser(userId, map[string]interface{}{"isActivate": true}); err != nil {
+	om := ordermap.New()
+	om.Store("isActivate", true)
+	if err := userService.dbUser.UpdateUser(userId, om); err != nil {
 		err.Message = fmt.Sprintf("can not update field isActivate: %s", err.Message)
 		return err
 	}
@@ -324,7 +331,9 @@ func (userService *UserService) ChangePassword(userId int, refreshTokenId int, o
 		return errors.New(errors.UnknownError, fmt.Sprintf("wrong generating hashPassword: %s", err.Error()))
 	}
 
-	if err := userService.dbUser.UpdateUser(userId, map[string]interface{}{"password": hashPassword}); err != nil {
+	om := ordermap.New()
+	om.Store("password", hashPassword)
+	if err := userService.dbUser.UpdateUser(userId, om); err != nil {
 		err.Message = fmt.Sprintf("wrong updating password in DB: %s", err.Message)
 		return err
 	}

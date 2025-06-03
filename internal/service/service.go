@@ -6,6 +6,8 @@ import (
 	"go-video-hosting/internal/database"
 	"go-video-hosting/internal/errors"
 	"go-video-hosting/internal/model"
+
+	"cnb.cool/ordermap/ordermap"
 )
 
 type Users interface {
@@ -16,7 +18,7 @@ type Users interface {
 	SaveAvatar(id int, fileName string) *errors.AppError
 	GetAvatar(id int, sendChunk func(int64, string, []byte) error) *errors.AppError
 	DeleteAvatar(id int) *errors.AppError
-	UpdateUser(id int, data map[string]interface{}) *errors.AppError
+	UpdateUser(id int, data *ordermap.OrderMap) *errors.AppError
 	DeleteUser(id int) *errors.AppError
 	Activate(activateLink string) *errors.AppError
 	GetAll() ([]*model.FindUsers, error)

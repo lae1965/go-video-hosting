@@ -6,6 +6,7 @@ import (
 	"go-video-hosting/internal/model"
 	"os"
 
+	"cnb.cool/ordermap/ordermap"
 	"github.com/jmoiron/sqlx"
 	"github.com/spf13/viper"
 )
@@ -15,7 +16,7 @@ type Users interface {
 	GetUserByEmail(email string) (*model.Users, error)
 	GetUserForRefreshById(id int) (*model.Users, error)
 	GetAvatarByUserId(userId int) (string, *errors.AppError)
-	UpdateUser(id int, data map[string]interface{}) *errors.AppError
+	UpdateUser(id int, data *ordermap.OrderMap) *errors.AppError
 	DeleteUser(id int) *errors.AppError
 	GetUserByActivateLink(activateLink string) (int, *errors.AppError)
 	GetAll() ([]*model.FindUsers, error)
