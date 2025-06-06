@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func (handler *Handler) registration(ctx *gin.Context) {
+func (h *Handler) registration(ctx *gin.Context) {
 	var input model.Users
 
 	if err := ctx.BindJSON(&input); err != nil {
@@ -21,12 +21,12 @@ func (handler *Handler) registration(ctx *gin.Context) {
 		return
 	}
 
-	if err := handler.validators.Validate.Struct(input); err != nil {
+	if err := h.validators.Validate.Struct(input); err != nil {
 		ErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	userResponse, err := handler.services.CreateUser(input)
+	userResponse, err := h.services.CreateUser(input)
 	if err != nil {
 		var code int
 		switch err.Type {
@@ -45,7 +45,7 @@ func (handler *Handler) registration(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, gin.H{"id": userResponse.UserId, "accessToken": userResponse.AccessToken})
 }
 
-func (handler *Handler) login(ctx *gin.Context) {
+func (h *Handler) login(ctx *gin.Context) {
 	var input model.Users
 
 	if err := ctx.BindJSON(&input); err != nil {
@@ -53,12 +53,12 @@ func (handler *Handler) login(ctx *gin.Context) {
 		return
 	}
 
-	if err := handler.validators.Validate.Struct(input); err != nil {
+	if err := h.validators.Validate.Struct(input); err != nil {
 		ErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	userResponse, err := handler.services.Login(input)
+	userResponse, err := h.services.Login(input)
 	if err != nil {
 		var code int
 		switch err.Type {
@@ -91,7 +91,7 @@ func (handler *Handler) login(ctx *gin.Context) {
 	})
 }
 
-func (handler *Handler) logout(ctx *gin.Context) {
+func (h *Handler) logout(ctx *gin.Context) {
 	refreshTokenIdString, err := ctx.Cookie("refreshTokenId")
 	if err != nil {
 		ErrorResponse(ctx, http.StatusBadRequest, fmt.Sprintf("cookie file is missing or defective: %s", err.Error()))
@@ -104,7 +104,7 @@ func (handler *Handler) logout(ctx *gin.Context) {
 		return
 	}
 
-	if err := handler.services.Logout(refreshTokenId); err != nil {
+	if err := h.services.Logout(refreshTokenId); err != nil {
 		ErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -115,13 +115,13 @@ func (handler *Handler) logout(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Logout is success"})
 }
 
-func (handler *Handler) refresh(ctx *gin.Context) {
+func (h *Handler) refresh(ctx *gin.Context) {
 	refreshToken, err := ctx.Cookie("refreshToken")
 	if err != nil {
 		ErrorResponse(ctx, http.StatusUnauthorized, fmt.Sprintf("can't find refreshToken in cookie: %s", err.Error()))
 		return
 	}
-	userResponse, appErr := handler.services.Refresh(refreshToken)
+	userResponse, appErr := h.services.Refresh(refreshToken)
 	if appErr != nil {
 		var code int
 		switch appErr.Type {
@@ -147,8 +147,8 @@ func (handler *Handler) refresh(ctx *gin.Context) {
 	})
 }
 
-func (handler *Handler) editUser(ctx *gin.Context) {
-	id, err := handler.GetIdFromQuery("id", 1, func(key string) string {
+func (h *Handler) editUser(ctx *gin.Context) {
+	id, err := h.GetIdFromQuery("id", 1, func(key string) string {
 		return ctx.Param(key)
 	})
 	if err != nil {
@@ -174,7 +174,7 @@ func (handler *Handler) editUser(ctx *gin.Context) {
 	}
 
 	if email, exist := user["email"].(string); exist {
-		if err := handler.validators.Validate.Var(email, "email"); err != nil {
+		if err := h.validators.Validate.Var(email, "email"); err != nil {
 			ErrorResponse(ctx, http.StatusBadRequest, fmt.Sprintf("invalid email format: %s", err.Error()))
 			return
 		}
@@ -192,7 +192,7 @@ func (handler *Handler) editUser(ctx *gin.Context) {
 		omUser.Store(key, value)
 	}
 
-	if appErr := handler.services.UpdateUser(id, omUser); appErr != nil {
+	if appErr := h.services.UpdateUser(id, omUser); appErr != nil {
 		var code int
 		switch appErr.Type {
 		case errors.NotUnique:
@@ -210,8 +210,8 @@ func (handler *Handler) editUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "update success"})
 }
 
-func (handler *Handler) deleteUser(ctx *gin.Context) {
-	id, err := handler.GetIdFromQuery("id", 1, func(key string) string {
+func (h *Handler) deleteUser(ctx *gin.Context) {
+	id, err := h.GetIdFromQuery("id", 1, func(key string) string {
 		return ctx.Param(key)
 	})
 	if err != nil {
@@ -219,7 +219,7 @@ func (handler *Handler) deleteUser(ctx *gin.Context) {
 		return
 	}
 
-	if err := handler.services.DeleteUser(id); err != nil {
+	if err := h.services.DeleteUser(id); err != nil {
 		var code int
 		switch err.Type {
 		case errors.NotFound:
@@ -235,14 +235,14 @@ func (handler *Handler) deleteUser(ctx *gin.Context) {
 	ctx.Status(http.StatusNoContent)
 }
 
-func (handler *Handler) activate(ctx *gin.Context) {
+func (h *Handler) activate(ctx *gin.Context) {
 	activateLink := ctx.Param("link")
-	if err := handler.validators.Validate.Var(activateLink, "required,url"); err != nil {
+	if err := h.validators.Validate.Var(activateLink, "required,url"); err != nil {
 		ErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if err := handler.services.Activate(activateLink); err != nil {
+	if err := h.services.Activate(activateLink); err != nil {
 		var code int
 		switch err.Type {
 		case errors.NotFound:
@@ -258,8 +258,8 @@ func (handler *Handler) activate(ctx *gin.Context) {
 	ctx.Redirect(http.StatusOK, fmt.Sprintf("%s:%s/emailConfirm", viper.GetString("client.host"), viper.GetString("client.port")))
 }
 
-func (handler *Handler) getMin(ctx *gin.Context) {
-	id, err := handler.GetIdFromQuery("id", 1, func(key string) string {
+func (h *Handler) getMin(ctx *gin.Context) {
+	id, err := h.GetIdFromQuery("id", 1, func(key string) string {
 		return ctx.Param(key)
 	})
 	if err != nil {
@@ -267,7 +267,7 @@ func (handler *Handler) getMin(ctx *gin.Context) {
 		return
 	}
 
-	nickName, appErr := handler.services.GetNickNameById(id)
+	nickName, appErr := h.services.GetNickNameById(id)
 	if appErr != nil {
 		var code int
 		switch appErr.Type {
@@ -285,8 +285,8 @@ func (handler *Handler) getMin(ctx *gin.Context) {
 
 }
 
-func (handler *Handler) getById(ctx *gin.Context) {
-	id, err := handler.GetIdFromQuery("id", 1, func(key string) string {
+func (h *Handler) getById(ctx *gin.Context) {
+	id, err := h.GetIdFromQuery("id", 1, func(key string) string {
 		return ctx.Param(key)
 	})
 	if err != nil {
@@ -294,7 +294,7 @@ func (handler *Handler) getById(ctx *gin.Context) {
 		return
 	}
 
-	user, appErr := handler.services.GetById(id)
+	user, appErr := h.services.GetById(id)
 	if appErr != nil {
 		var code int
 		switch appErr.Type {
@@ -311,8 +311,8 @@ func (handler *Handler) getById(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, user)
 }
 
-func (handler *Handler) getAll(ctx *gin.Context) {
-	users, err := handler.services.GetAll()
+func (h *Handler) getAll(ctx *gin.Context) {
+	users, err := h.services.GetAll()
 	if err != nil {
 		ErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -321,8 +321,8 @@ func (handler *Handler) getAll(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, users)
 }
 
-func (handler *Handler) saveAvatar(ctx *gin.Context) {
-	id, err := handler.GetIdFromQuery("id", 1, func(key string) string {
+func (h *Handler) saveAvatar(ctx *gin.Context) {
+	id, err := h.GetIdFromQuery("id", 1, func(key string) string {
 		return ctx.Param(key)
 	})
 	if err != nil {
@@ -336,12 +336,12 @@ func (handler *Handler) saveAvatar(ctx *gin.Context) {
 		return
 	}
 
-	if err := handler.validators.Validate.Var(file, "avatar"); err != nil {
+	if err := h.validators.Validate.Var(file, "avatar"); err != nil {
 		ErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if err := handler.services.SaveAvatar(id, file.Filename); err != nil {
+	if err := h.services.SaveAvatar(id, file.Filename); err != nil {
 		var code int
 		switch err.Type {
 		case errors.NotFound:
@@ -357,8 +357,8 @@ func (handler *Handler) saveAvatar(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Avatar was saved successfully"})
 }
 
-func (handler *Handler) getAvatar(ctx *gin.Context) {
-	id, err := handler.GetIdFromQuery("id", 1, func(key string) string {
+func (h *Handler) getAvatar(ctx *gin.Context) {
+	id, err := h.GetIdFromQuery("id", 1, func(key string) string {
 		return ctx.Param(key)
 	})
 	if err != nil {
@@ -367,7 +367,7 @@ func (handler *Handler) getAvatar(ctx *gin.Context) {
 	}
 
 	isHeadersSet := false
-	appErr := handler.services.GetAvatar(id, func(fileSize int64, mimeType string, chunk []byte) error {
+	appErr := h.services.GetAvatar(id, func(fileSize int64, mimeType string, chunk []byte) error {
 		if !isHeadersSet {
 			ctx.Writer.Header().Set("Content-Length", fmt.Sprintf("%d", fileSize))
 			ctx.Writer.Header().Set("Content-Type", mimeType)
@@ -393,8 +393,8 @@ func (handler *Handler) getAvatar(ctx *gin.Context) {
 	}
 }
 
-func (handler *Handler) deleteAvatar(ctx *gin.Context) {
-	id, err := handler.GetIdFromQuery("id", 1, func(key string) string {
+func (h *Handler) deleteAvatar(ctx *gin.Context) {
+	id, err := h.GetIdFromQuery("id", 1, func(key string) string {
 		return ctx.Param(key)
 	})
 	if err != nil {
@@ -402,7 +402,7 @@ func (handler *Handler) deleteAvatar(ctx *gin.Context) {
 		return
 	}
 
-	if err := handler.services.DeleteAvatar(id); err != nil {
+	if err := h.services.DeleteAvatar(id); err != nil {
 		var code int
 		switch err.Type {
 		case errors.NotFound:
@@ -420,7 +420,7 @@ func (handler *Handler) deleteAvatar(ctx *gin.Context) {
 	ctx.Status(http.StatusNoContent)
 }
 
-func (handler *Handler) checkUnique(ctx *gin.Context) {
+func (h *Handler) checkUnique(ctx *gin.Context) {
 	nickName := ctx.Query("nickName")
 	email := ctx.Query("email")
 
@@ -429,7 +429,7 @@ func (handler *Handler) checkUnique(ctx *gin.Context) {
 		return
 	}
 
-	isUnique, message, err := handler.services.CheckIsNickNameEmailUnique(nickName, email)
+	isUnique, message, err := h.services.CheckIsNickNameEmailUnique(nickName, email)
 	if err != nil {
 		ErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -443,7 +443,7 @@ func (handler *Handler) checkUnique(ctx *gin.Context) {
 	ctx.Status(http.StatusNoContent)
 }
 
-func (handler *Handler) changePassword(ctx *gin.Context) {
+func (h *Handler) changePassword(ctx *gin.Context) {
 	var input model.ChangePasswordRequest
 
 	if err := ctx.BindJSON(&input); err != nil {
@@ -451,7 +451,7 @@ func (handler *Handler) changePassword(ctx *gin.Context) {
 		return
 	}
 
-	if err := handler.validators.Validate.Struct(input); err != nil {
+	if err := h.validators.Validate.Struct(input); err != nil {
 		ErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -468,7 +468,7 @@ func (handler *Handler) changePassword(ctx *gin.Context) {
 		return
 	}
 
-	if err := handler.services.ChangePassword(input.Id, refreshTokenId, input.OldPassword, input.NewPassword); err != nil {
+	if err := h.services.ChangePassword(input.Id, refreshTokenId, input.OldPassword, input.NewPassword); err != nil {
 		var code int
 		switch err.Type {
 		case errors.NotFound:

@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (handler *Handler) createChannel(ctx *gin.Context) {
+func (h *Handler) createChannel(ctx *gin.Context) {
 	var input *model.CreateChannel
 
 	if err := ctx.BindJSON(&input); err != nil {
@@ -18,7 +18,7 @@ func (handler *Handler) createChannel(ctx *gin.Context) {
 		return
 	}
 
-	if err := handler.validators.Validate.Struct(input); err != nil {
+	if err := h.validators.Validate.Struct(input); err != nil {
 		ErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -26,16 +26,16 @@ func (handler *Handler) createChannel(ctx *gin.Context) {
 	userIdStr := strings.Split(input.IdList, "_")[0]
 	userId, _ := strconv.ParseInt(userIdStr, 10, 0)
 
-	channelId, err := handler.services.Channel.CreateChannel(int(userId), input.Title, input.Description)
+	channelId, err := h.services.Channel.CreateChannel(int(userId), input.Title, input.Description)
 	if err != nil {
-		ErrorResponse(ctx, handler.ErrorType2RequestStatus(err.Type), err.Message)
+		ErrorResponse(ctx, h.ErrorType2RequestStatus(err.Type), err.Message)
 		return
 	}
 
 	ctx.JSON(http.StatusCreated, channelId)
 }
 
-func (handler *Handler) editChannel(ctx *gin.Context) {
+func (h *Handler) editChannel(ctx *gin.Context) {
 	var input *model.UpdateChannel
 
 	if err := ctx.BindJSON(&input); err != nil {
@@ -43,7 +43,7 @@ func (handler *Handler) editChannel(ctx *gin.Context) {
 		return
 	}
 
-	if err := handler.validators.Validate.Struct(input); err != nil {
+	if err := h.validators.Validate.Struct(input); err != nil {
 		ErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -52,18 +52,18 @@ func (handler *Handler) editChannel(ctx *gin.Context) {
 	userId, _ := strconv.ParseInt(idListArray[0], 10, 0)
 	channelId, _ := strconv.ParseInt(idListArray[1], 10, 0)
 
-	if err := handler.services.Channel.UpdateChannel(int(userId), int(channelId), map[string]string{
+	if err := h.services.Channel.UpdateChannel(int(userId), int(channelId), map[string]string{
 		"title":       input.UpdatingObject.Title,
 		"description": input.UpdatingObject.Description,
 	}); err != nil {
-		ErrorResponse(ctx, handler.ErrorType2RequestStatus(err.Type), err.Message)
+		ErrorResponse(ctx, h.ErrorType2RequestStatus(err.Type), err.Message)
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "updating success"})
 }
 
-func (handler *Handler) subscribe(ctx *gin.Context) {
+func (h *Handler) subscribe(ctx *gin.Context) {
 	var input *model.SubscribeRequest
 
 	if err := ctx.BindJSON(&input); err != nil {
@@ -71,29 +71,22 @@ func (handler *Handler) subscribe(ctx *gin.Context) {
 		return
 	}
 
-	if err := handler.validators.Validate.Struct(input); err != nil {
+	if err := h.validators.Validate.Struct(input); err != nil {
 		ErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	response, err := handler.services.ToggleSubscribe(input.UserId, input.ChannelId)
+	response, err := h.services.ToggleSubscribe(input.UserId, input.ChannelId)
 	if err != nil {
-		var code int
-		switch err.Type {
-		case errors.NotFound:
-			code = http.StatusNotFound
-		default:
-			code = http.StatusInternalServerError
-		}
-
-		ErrorResponse(ctx, code, err.Message)
+		ErrorResponse(ctx, h.ErrorType2RequestStatus(err.Type), err.Message)
+		return
 	}
 
 	ctx.JSON(http.StatusOK, response)
 }
 
-func (handler *Handler) removeChannel(ctx *gin.Context) {
-	id, err := handler.GetIdFromQuery("id", 1, func(key string) string {
+func (h *Handler) removeChannel(ctx *gin.Context) {
+	id, err := h.GetIdFromQuery("id", 1, func(key string) string {
 		return ctx.Param(key)
 	})
 	if err != nil {
@@ -101,42 +94,35 @@ func (handler *Handler) removeChannel(ctx *gin.Context) {
 		return
 	}
 
-	if err := handler.services.DeleteChannel(id); err != nil {
-		ErrorResponse(ctx, handler.ErrorType2RequestStatus(err.Type), err.Message)
+	if err := h.services.DeleteChannel(id); err != nil {
+		ErrorResponse(ctx, h.ErrorType2RequestStatus(err.Type), err.Message)
 		return
 	}
 
 	ctx.Status(http.StatusNoContent)
 }
 
-func (handler *Handler) getOneChannel(ctx *gin.Context) {
+func (h *Handler) getOneChannel(ctx *gin.Context) {
 	getQuery := func(key string) string {
 		return ctx.Query(key)
 	}
 
-	userId, err := handler.GetIdFromQuery("user_id", 0, getQuery)
+	userId, err := h.GetIdFromQuery("user_id", 0, getQuery)
 	if err != nil {
 		ErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	channelId, err := handler.GetIdFromQuery("channel_id", 1, getQuery)
+	channelId, err := h.GetIdFromQuery("channel_id", 1, getQuery)
 	if err != nil {
 		ErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	channel, appErr := handler.services.Channel.GetChannelById(userId, channelId)
+	channel, appErr := h.services.Channel.GetChannelById(userId, channelId)
 	if appErr != nil {
-		var code int
-		switch appErr.Type {
-		case errors.NotFound:
-			code = http.StatusNotFound
-		default:
-			code = http.StatusInternalServerError
-		}
-
-		ErrorResponse(ctx, code, appErr.Message)
+		ErrorResponse(ctx, h.ErrorType2RequestStatus(appErr.Type), appErr.Message)
+		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
@@ -149,8 +135,8 @@ func (handler *Handler) getOneChannel(ctx *gin.Context) {
 	})
 }
 
-func (handler *Handler) getAllChannelsOfUser(ctx *gin.Context) {
-	userId, err := handler.GetIdFromQuery("user_id", 1, func(key string) string {
+func (h *Handler) getAllChannelsOfUser(ctx *gin.Context) {
+	userId, err := h.GetIdFromQuery("user_id", 1, func(key string) string {
 		return ctx.Param(key)
 	})
 	if err != nil {
@@ -158,25 +144,21 @@ func (handler *Handler) getAllChannelsOfUser(ctx *gin.Context) {
 		return
 	}
 
-	channels, appErr := handler.services.Channel.GetAllChannelsOfUser(userId)
+	channels, appErr := h.services.Channel.GetAllChannelsOfUser(userId)
 	if appErr != nil {
-		var code int
-		switch appErr.Type {
-		case errors.EmptyField:
-			code = http.StatusNoContent
-		default:
-			code = http.StatusInternalServerError
-		}
-
-		ErrorResponse(ctx, code, appErr.Message)
+		ErrorResponse(ctx, http.StatusInternalServerError, appErr.Message)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, channels)
+	if len(channels) == 0 {
+		ctx.Status(http.StatusNoContent)
+	} else {
+		ctx.JSON(http.StatusOK, channels)
+	}
 }
 
-func (handler *Handler) getSubscribersList(ctx *gin.Context) {
-	userId, err := handler.GetIdFromQuery("user_id", 1, func(key string) string {
+func (h *Handler) getSubscribersList(ctx *gin.Context) {
+	userId, err := h.GetIdFromQuery("user_id", 1, func(key string) string {
 		return ctx.Param(key)
 	})
 	if err != nil {
@@ -184,7 +166,7 @@ func (handler *Handler) getSubscribersList(ctx *gin.Context) {
 		return
 	}
 
-	idLists, appErr := handler.services.Channel.GetAllIdListOfUser(userId)
+	idLists, appErr := h.services.Channel.GetAllIdListOfUser(userId)
 	if appErr != nil {
 		var code int
 		switch appErr.Type {

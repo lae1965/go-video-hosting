@@ -181,9 +181,6 @@ func (channelPostgres *ChannelPostgres) GetAllChannelsOfUser(userId int) ([]*mod
 	if err := channelPostgres.dbSql.Select(&channels, query, userId); err != nil {
 		return nil, errors.New(errors.UnknownError, err.Error())
 	}
-	if len(channels) == 0 {
-		return nil, errors.New(errors.EmptyField, fmt.Sprintf("user with Id = %d has no channels", userId))
-	}
 
 	return channels, nil
 }

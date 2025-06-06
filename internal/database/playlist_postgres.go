@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"go-video-hosting/internal/errors"
+	"go-video-hosting/internal/model"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
@@ -98,4 +99,29 @@ func (pp *PlaylistPostgres) DeletePlaylist(playlisyId int) *errors.AppError {
 	}
 
 	return nil
+}
+
+func (pp *PlaylistPostgres) GetPlaylistById(playlistId int) (*model.Playlist, *errors.AppError) {
+	query := "SELECT * FROM PLAYLIST WHERE id = $1"
+
+	var result model.Playlist
+	if err := pp.dbSql.Get(&result, query, playlistId); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New(errors.NotFound, fmt.Sprintf("playlist with id = %d not exist", playlistId))
+		}
+		return nil, errors.New(errors.UnknownError, err.Error())
+	}
+
+	return &result, nil
+}
+
+func (pp *PlaylistPostgres) GetAllPlaylistsOfChannel(channelId int) ([]*model.Playlist, *errors.AppError) {
+	query := "SELECT * FROM PLAYLIST WHERE channelId = $1"
+
+	var playlists []*model.Playlist
+	if err := pp.dbSql.Select(&playlists, query, channelId); err != nil {
+		return nil, errors.New(errors.UnknownError, err.Error())
+	}
+
+	return playlists, nil
 }

@@ -50,6 +50,8 @@ type Playlist interface {
 	CreatePlaylist(idList string, title string, description string) (int, *errors.AppError)
 	UpdatePlaylist(idList string, data map[string]string) *errors.AppError
 	DeletePlaylist(playlistId int) *errors.AppError
+	GetPlaylistById(playlistId int) (*model.Playlist, *errors.AppError)
+	GetAllPlaylistsOfChannel(channelId int) ([]*model.Playlist, *errors.AppError)
 }
 
 type Service struct {

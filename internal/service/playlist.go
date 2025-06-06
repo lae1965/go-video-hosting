@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go-video-hosting/internal/database"
 	"go-video-hosting/internal/errors"
+	"go-video-hosting/internal/model"
 	"strconv"
 	"strings"
 )
@@ -98,4 +99,12 @@ func (s *PlaylistService) UpdatePlaylist(idList string, data map[string]string) 
 func (s *PlaylistService) DeletePlaylist(playlistId int) *errors.AppError {
 	// TODO - удалить все видео плайлиста с gRPC - сервера
 	return s.dbPlaylist.DeletePlaylist(playlistId)
+}
+
+func (s *PlaylistService) GetPlaylistById(playlistId int) (*model.Playlist, *errors.AppError) {
+	return s.dbPlaylist.GetPlaylistById(playlistId)
+}
+
+func (s *PlaylistService) GetAllPlaylistsOfChannel(channelId int) ([]*model.Playlist, *errors.AppError) {
+	return s.dbPlaylist.GetAllPlaylistsOfChannel(channelId)
 }

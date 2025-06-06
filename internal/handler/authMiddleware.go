@@ -16,7 +16,7 @@ const (
 	userIdCtx     = "useId"
 )
 
-func (handler Handler) AuthMiddleware(ctx *gin.Context) {
+func (h Handler) AuthMiddleware(ctx *gin.Context) {
 	authHeader := ctx.GetHeader(authorization)
 	if authHeader == "" {
 		ErrorResponse(ctx, http.StatusUnauthorized, fmt.Sprintf(`header "%s" is empty`, authorization))
@@ -34,7 +34,7 @@ func (handler Handler) AuthMiddleware(ctx *gin.Context) {
 		return
 	}
 
-	userId, err := handler.services.ValidateToken(authParts[1], os.Getenv(accessKey))
+	userId, err := h.services.ValidateToken(authParts[1], os.Getenv(accessKey))
 	if err != nil {
 		ErrorResponse(ctx, http.StatusUnauthorized, err.Error())
 		return
