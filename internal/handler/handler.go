@@ -91,9 +91,9 @@ func (handler *Handler) InitRoutes() *gin.Engine {
 		// playlist := api.Group("/playlist", handler.AuthMiddleware) //! for testing
 		playlist := api.Group("/playlist") //! for testing
 		{
-			playlist.POST("/create", handler.createPlaylist) //TODO
-			playlist.PATCH("/edit", handler.editPlaylist)    //TODO
-			// playlist.DELETE("/:id")                          //TODO
+			playlist.POST("/create", handler.createPlaylist)
+			playlist.PATCH("/edit", handler.editPlaylist)
+			playlist.DELETE("/:id", handler.removePlaylist)
 			// playlist.GET("/get_one/:id")                     //TODO
 			// playlist.GET("/get_all/:channel_id")             //TODO
 		}

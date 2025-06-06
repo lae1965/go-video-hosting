@@ -84,3 +84,18 @@ func (pp *PlaylistPostgres) UpdatePlaylist(transaction *sql.Tx, channelId int, p
 
 	return nil
 }
+
+func (pp *PlaylistPostgres) DeletePlaylist(playlisyId int) *errors.AppError {
+	query := "DELETE FROM PLAYLIST WHERE ID = $1"
+
+	result, err := pp.dbSql.Exec(query, playlisyId)
+	if err != nil {
+		return errors.New(errors.UnknownError, err.Error())
+	}
+
+	if row, _ := result.RowsAffected(); row == 0 {
+		return errors.New(errors.NotFound, fmt.Sprintf("playlist with Id = %d not exist", playlisyId))
+	}
+
+	return nil
+}

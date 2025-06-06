@@ -94,3 +94,8 @@ func (s *PlaylistService) UpdatePlaylist(idList string, data map[string]string) 
 
 	return s.dbPlaylist.UpdatePlaylist(nil, channelId, playlistId, data)
 }
+
+func (s *PlaylistService) DeletePlaylist(playlistId int) *errors.AppError {
+	// TODO - удалить все видео плайлиста с gRPC - сервера
+	return s.dbPlaylist.DeletePlaylist(playlistId)
+}

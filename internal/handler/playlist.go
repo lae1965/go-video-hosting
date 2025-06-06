@@ -56,3 +56,20 @@ func (handler *Handler) editPlaylist(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "updating success"})
 }
+
+func (handler *Handler) removePlaylist(ctx *gin.Context) {
+	id, err := handler.GetIdFromQuery("id", 1, func(key string) string {
+		return ctx.Param(key)
+	})
+	if err != nil {
+		ErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := handler.services.DeletePlaylist(id); err != nil {
+		ErrorResponse(ctx, handler.ErrorType2RequestStatus(err.Type), err.Message)
+		return
+	}
+
+	ctx.Status(http.StatusNoContent)
+}

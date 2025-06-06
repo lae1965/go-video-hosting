@@ -56,7 +56,7 @@ func (handler *Handler) editChannel(ctx *gin.Context) {
 		"title":       input.UpdatingObject.Title,
 		"description": input.UpdatingObject.Description,
 	}); err != nil {
-		ErrorResponse(ctx, handler.ErrorType2RequestStatus(err.Type), err.Message)		
+		ErrorResponse(ctx, handler.ErrorType2RequestStatus(err.Type), err.Message)
 		return
 	}
 
@@ -102,15 +102,7 @@ func (handler *Handler) removeChannel(ctx *gin.Context) {
 	}
 
 	if err := handler.services.DeleteChannel(id); err != nil {
-		var code int
-		switch err.Type {
-		case errors.NotFound:
-			code = http.StatusNotFound
-		default:
-			code = http.StatusInternalServerError
-		}
-
-		ErrorResponse(ctx, code, err.Message)
+		ErrorResponse(ctx, handler.ErrorType2RequestStatus(err.Type), err.Message)
 		return
 	}
 

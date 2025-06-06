@@ -49,6 +49,7 @@ type Channel interface {
 type Playlist interface {
 	CreatePlaylist(idList string, title string, description string) (int, *errors.AppError)
 	UpdatePlaylist(idList string, data map[string]string) *errors.AppError
+	DeletePlaylist(playlistId int) *errors.AppError
 }
 
 type Service struct {
