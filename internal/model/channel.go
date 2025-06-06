@@ -15,13 +15,13 @@ type Channel struct {
 }
 
 type CreateChannel struct {
-	IdList      string `json:"idList" validate:"required,channelIdList"`
+	IdList      string `json:"idList" validate:"required,id_list_len_1"`
 	Title       string `json:"title" validate:"required"`
 	Description string `json:"description"`
 }
 
 type UpdateChannel struct {
-	IdList         string `json:"idList" validate:"required,channelIdList"`
+	IdList         string `json:"idList" validate:"required,id_list_len_2"`
 	UpdatingObject struct {
 		Title       string `json:"title"`
 		Description string `json:"description"`

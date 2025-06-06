@@ -21,42 +21,76 @@ func NewChannelService(dbChannel database.Channel, dbUser database.Users, Create
 	}
 }
 
-func (channelService *ChannelService) CreateChannel(userId int, title string, description string) (int, *errors.AppError) {
-	var err *errors.AppError
-	transaction, errTr := channelService.createTransaction()
+func (s *ChannelService) CreateChannel(userId int, title string, description string) (int, *errors.AppError) {
+	var errDB *errors.AppError
+	transaction, errTr := s.createTransaction()
 	if errTr != nil {
 		return 0, errors.New(errors.UnknownError, fmt.Sprintf("failed create transaction: %s", errTr.Error()))
 	}
 
 	defer func() {
-		if err != nil {
+		if errDB != nil {
 			transaction.Rollback()
 		} else {
 			transaction.Commit()
 		}
 	}()
 
-	channelId, err := channelService.dbChannel.CreateChannel(transaction, userId, title, description) // Создаем канал
+	isUserExist, err := s.dbChannel.IsUserExist(userId)
 	if err != nil {
-		err.Message = fmt.Sprintf("wrong creating channel: %s", err.Message)
-		return 0, err
+		return 0, errors.New(errors.UnknownError, err.Error())
+	}
+	if !isUserExist {
+		return 0, errors.New(errors.NotFound, fmt.Sprintf("user with userid = %d not found", userId))
 	}
 
-	if err = channelService.dbUser.ChangeChannelsCountOfUser(transaction, userId, true); err != nil { // Увеличиваем количество каналов в таблице users
-		err.Message = fmt.Sprintf("wrong incrementing channels count: %s", err.Message)
-		return 0, err
+	isUnique, err := s.dbChannel.IsTitlelUniqueForUser(userId, title)
+	if err != nil {
+		return 0, errors.New(errors.UnknownError, err.Error())
+	}
+	if !isUnique {
+		return 0, errors.New(errors.NotUnique, "user's channel name must be unique")
+	}
+
+	channelId, errDB := s.dbChannel.CreateChannel(transaction, userId, title, description) // Создаем канал
+	if errDB != nil {
+		errDB.Message = fmt.Sprintf("wrong creating channel: %s", errDB.Message)
+		return 0, errDB
+	}
+
+	if errDB = s.dbUser.ChangeChannelsCountOfUser(transaction, userId, true); errDB != nil { // Увеличиваем количество каналов в таблице users
+		errDB.Message = fmt.Sprintf("wrong incrementing channels count: %s", errDB.Message)
+		return 0, errDB
 	}
 
 	return channelId, nil
 }
 
-func (channelService *ChannelService) UpdateChannel(userId int, channelId int, data map[string]string) *errors.AppError {
-	return channelService.dbChannel.UpdateChannel(userId, channelId, data)
+func (s *ChannelService) UpdateChannel(userId int, channelId int, data map[string]string) *errors.AppError {
+	isUserExist, err := s.dbChannel.IsUserExist(userId)
+	if err != nil {
+		return errors.New(errors.UnknownError, err.Error())
+	}
+	if !isUserExist {
+		return errors.New(errors.NotFound, fmt.Sprintf("user with userId = %d not exist", userId))
+	}
+
+	if title, exist := data["title"]; exist {
+		isUnique, err := s.dbChannel.IsTitlelUniqueForUser(userId, title)
+		if err != nil {
+			return errors.New(errors.UnknownError, err.Error())
+		}
+		if !isUnique {
+			return errors.New(errors.NotUnique, "user's channel name must be unique")
+		}
+	}
+
+	return s.dbChannel.UpdateChannel(userId, channelId, data)
 }
 
-func (channelService *ChannelService) DeleteChannel(channelId int) *errors.AppError {
+func (s *ChannelService) DeleteChannel(channelId int) *errors.AppError {
 	var err *errors.AppError
-	transaction, errTr := channelService.createTransaction()
+	transaction, errTr := s.createTransaction()
 	if errTr != nil {
 		return errors.New(errors.UnknownError, fmt.Sprintf("failed create transaction: %s", errTr.Error()))
 	}
@@ -70,13 +104,13 @@ func (channelService *ChannelService) DeleteChannel(channelId int) *errors.AppEr
 	}()
 
 	// TODO - удалить все видео канала с gRPC - сервера
-	userId, err := channelService.dbChannel.DeleteChannel(transaction, channelId) // Удаляем канал
+	userId, err := s.dbChannel.DeleteChannel(transaction, channelId) // Удаляем канал
 	if err != nil {
 		err.Message = fmt.Sprintf("wrong deleting channel: %s", err.Message)
 		return err
 	}
 
-	if err = channelService.dbUser.ChangeChannelsCountOfUser(transaction, userId, false); err != nil { // Уменьшаем количество каналов в таблице users
+	if err = s.dbUser.ChangeChannelsCountOfUser(transaction, userId, false); err != nil { // Уменьшаем количество каналов в таблице users
 		err.Message = fmt.Sprintf("wrong incrementing channels count: %s", err.Message)
 		return err
 	}
@@ -84,9 +118,9 @@ func (channelService *ChannelService) DeleteChannel(channelId int) *errors.AppEr
 	return nil
 }
 
-func (channelService *ChannelService) ToggleSubscribe(userId, channelId int) (*model.SubscribeRespose, *errors.AppError) {
+func (s *ChannelService) ToggleSubscribe(userId, channelId int) (*model.SubscribeRespose, *errors.AppError) {
 	var err *errors.AppError
-	transaction, errTr := channelService.createTransaction()
+	transaction, errTr := s.createTransaction()
 	if errTr != nil {
 		return nil, errors.New(errors.UnknownError, fmt.Sprintf("failed create transaction: %s", errTr.Error()))
 	}
@@ -99,13 +133,13 @@ func (channelService *ChannelService) ToggleSubscribe(userId, channelId int) (*m
 		}
 	}()
 
-	isSubscribe, err := channelService.dbChannel.ToggleSubscribe(transaction, userId, channelId)
+	isSubscribe, err := s.dbChannel.ToggleSubscribe(transaction, userId, channelId)
 	if err != nil {
 		err.Message = fmt.Sprintf("wrong toggleSubscribing: %s", err.Message)
 		return nil, err
 	}
 
-	subscribersCount, err := channelService.dbChannel.ChangeSubscribersCount(transaction, channelId, !isSubscribe)
+	subscribersCount, err := s.dbChannel.ChangeSubscribersCount(transaction, channelId, !isSubscribe)
 	if err != nil {
 		err.Message = fmt.Sprintf("wrong changing subscribesCount: %s", err.Message)
 		return nil, err
@@ -117,14 +151,14 @@ func (channelService *ChannelService) ToggleSubscribe(userId, channelId int) (*m
 	}, nil
 }
 
-func (channelService *ChannelService) GetChannelById(userId, channelId int) (*model.GetChannelResponse, *errors.AppError) {
-	channel, err := channelService.dbChannel.GetChannelById(channelId)
+func (s *ChannelService) GetChannelById(userId, channelId int) (*model.GetChannelResponse, *errors.AppError) {
+	channel, err := s.dbChannel.GetChannelById(channelId)
 	if err != nil {
 		err.Message = fmt.Sprintf("wrong getting channel: %s", err.Message)
 		return nil, err
 	}
 
-	isSubscribe, err := channelService.dbChannel.IsSubscribe(userId, channelId)
+	isSubscribe, err := s.dbChannel.IsSubscribe(userId, channelId)
 	if err != nil {
 		err.Message = fmt.Sprintf("channel subscription request error: %s", err.Message)
 		return nil, err
@@ -137,8 +171,8 @@ func (channelService *ChannelService) GetChannelById(userId, channelId int) (*mo
 	}, nil
 }
 
-func (channelService *ChannelService) GetAllChannelsOfUser(userId int) ([]*model.GetAllChannelsResponse, *errors.AppError) {
-	channelsFromDb, err := channelService.dbChannel.GetAllChannelsOfUser(userId)
+func (s *ChannelService) GetAllChannelsOfUser(userId int) ([]*model.GetAllChannelsResponse, *errors.AppError) {
+	channelsFromDb, err := s.dbChannel.GetAllChannelsOfUser(userId)
 	if err != nil {
 		return nil, err
 	}
@@ -158,8 +192,8 @@ func (channelService *ChannelService) GetAllChannelsOfUser(userId int) ([]*model
 	return channelsResponse, nil
 }
 
-func (channelService *ChannelService) GetAllIdListOfUser(userId int) ([]string, *errors.AppError) {
-	idsList, err := channelService.dbChannel.GetSubscribingChannelsOfUser(userId)
+func (s *ChannelService) GetAllIdListOfUser(userId int) ([]string, *errors.AppError) {
+	idsList, err := s.dbChannel.GetSubscribingChannelsOfUser(userId)
 	if err != nil {
 		return nil, err
 	}

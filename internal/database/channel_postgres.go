@@ -41,22 +41,6 @@ func (channelPostgres *ChannelPostgres) IsTitlelUniqueForUser(userId int, title 
 }
 
 func (channelPostgres *ChannelPostgres) CreateChannel(transaction *sql.Tx, userId int, title string, description string) (int, *errors.AppError) {
-	isUserExist, err := channelPostgres.IsUserExist(userId)
-	if err != nil {
-		return 0, errors.New(errors.UnknownError, err.Error())
-	}
-	if !isUserExist {
-		return 0, errors.New(errors.NotFound, fmt.Sprintf("user with userId = %d not exist", userId))
-	}
-
-	isUnique, err := channelPostgres.IsTitlelUniqueForUser(userId, title)
-	if err != nil {
-		return 0, errors.New(errors.UnknownError, err.Error())
-	}
-	if !isUnique {
-		return 0, errors.New(errors.NotUnique, "user's channel name must be unique")
-	}
-
 	query := "INSERT INTO CHANNEL (userId, title, description) VALUES ($1, $2, $3) RETURNING id"
 
 	row := transaction.QueryRow(query, userId, title, description)
@@ -70,35 +54,13 @@ func (channelPostgres *ChannelPostgres) CreateChannel(transaction *sql.Tx, userI
 }
 
 func (channelPostgres *ChannelPostgres) UpdateChannel(userId int, channelId int, data map[string]string) *errors.AppError {
-	isUserExist, err := channelPostgres.IsUserExist(userId)
-	if err != nil {
-		return errors.New(errors.UnknownError, err.Error())
-	}
-	if !isUserExist {
-		return errors.New(errors.NotFound, fmt.Sprintf("user with userId = %d not exist", userId))
-	}
-
-	title := ""
 	clauses := []string{}
 	args := []interface{}{}
 	i := 1
 	for key, value := range data {
-		if key == "title" {
-			title = value
-		}
 		clauses = append(clauses, fmt.Sprintf("%s = $%d", key, i))
 		args = append(args, value)
 		i++
-	}
-
-	if title != "" {
-		isUnique, err := channelPostgres.IsTitlelUniqueForUser(userId, title)
-		if err != nil {
-			return errors.New(errors.UnknownError, err.Error())
-		}
-		if !isUnique {
-			return errors.New(errors.NotUnique, "user's channel name must be unique")
-		}
 	}
 
 	args = append(args, channelId)

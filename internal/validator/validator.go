@@ -20,7 +20,10 @@ func New() *Validator {
 	}
 	validator.Validate.RegisterValidation("password", PasswordValidator)
 	validator.Validate.RegisterValidation("avatar", AvatarValidator)
-	validator.Validate.RegisterValidation("channelIdList", ChannelIdListValidator)
+	validator.Validate.RegisterValidation("id_list_len_1", idListValidator(1))
+	validator.Validate.RegisterValidation("id_list_len_2", idListValidator(2))
+	validator.Validate.RegisterValidation("id_list_len_3", idListValidator(3))
+
 	return validator
 }
 
@@ -66,19 +69,19 @@ func AvatarValidator(fl validator.FieldLevel) bool {
 	return false
 }
 
-func ChannelIdListValidator(fl validator.FieldLevel) bool {
-	idList := fl.Field().String()
-
-	idListArr := strings.Split(idList, "_")
-	if len(idListArr) != 2 {
-		return false
-	}
-
-	for _, idStr := range idListArr {
-		if _, err := strconv.ParseInt(idStr, 10, 0); err != nil {
+func idListValidator(idsCount int) validator.Func {
+	return func(fl validator.FieldLevel) bool {
+		idListArr := strings.Split(fl.Field().String(), "_")
+		if len(idListArr) < idsCount {
 			return false
 		}
-	}
 
-	return true
+		for _, idStr := range idListArr {
+			if _, err := strconv.ParseInt(idStr, 10, 0); err != nil {
+				return false
+			}
+		}
+
+		return true
+	}
 }

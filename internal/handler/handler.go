@@ -2,8 +2,10 @@ package handler
 
 import (
 	"fmt"
+	"go-video-hosting/internal/errors"
 	"go-video-hosting/internal/service"
 	"go-video-hosting/internal/validator"
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -30,6 +32,19 @@ func (handler *Handler) GetIdFromQuery(key string, min int, getKey func(string) 
 	}
 
 	return int(id), nil
+}
+
+func (handler *Handler) ErrorType2RequestStatus(errType errors.ErrType) int {
+	var code int
+	switch errType {
+	case errors.NotFound:
+		code = http.StatusBadRequest
+	case errors.NotUnique:
+		code = http.StatusConflict
+	default:
+		code = http.StatusInternalServerError
+	}
+	return code
 }
 
 func (handler *Handler) InitRoutes() *gin.Engine {
@@ -72,7 +87,17 @@ func (handler *Handler) InitRoutes() *gin.Engine {
 			channel.GET("/get_all/:user_id", handler.getAllChannelsOfUser)
 			channel.GET("subscribes_list/:user_id", handler.getSubscribersList)
 		}
-	}
 
-	return router
+		// playlist := api.Group("/playlist", handler.AuthMiddleware) //! for testing
+		playlist := api.Group("/playlist") //! for testing
+		{
+			playlist.POST("/create", handler.createPlaylist) //TODO
+			playlist.PATCH("/edit", handler.editPlaylist)    //TODO
+			// playlist.DELETE("/:id")                          //TODO
+			// playlist.GET("/get_one/:id")                     //TODO
+			// playlist.GET("/get_all/:channel_id")             //TODO
+		}
+
+		return router
+	}
 }

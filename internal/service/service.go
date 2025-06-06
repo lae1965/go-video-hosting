@@ -46,16 +46,23 @@ type Channel interface {
 	GetAllIdListOfUser(userId int) ([]string, *errors.AppError)
 }
 
+type Playlist interface {
+	CreatePlaylist(idList string, title string, description string) (int, *errors.AppError)
+	UpdatePlaylist(idList string, data map[string]string) *errors.AppError
+}
+
 type Service struct {
 	Users
 	Token
 	Channel
+	Playlist
 }
 
 func New(db *database.Database, grpcClient grpcclient.FilesGRPCClient) *Service {
 	return &Service{
-		Users:   NewUserService(db.Users, NewTokenService(db.Token), db.BeginTransaction, grpcClient),
-		Token:   NewTokenService(db.Token),
-		Channel: NewChannelService(db.Channel, db.Users, db.BeginTransaction),
+		Users:    NewUserService(db.Users, NewTokenService(db.Token), db.BeginTransaction, grpcClient),
+		Token:    NewTokenService(db.Token),
+		Channel:  NewChannelService(db.Channel, db.Users, db.BeginTransaction),
+		Playlist: NewPlaylistService(db.Playlist, db.BeginTransaction),
 	}
 }

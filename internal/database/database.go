@@ -49,19 +49,28 @@ type Channel interface {
 	GetSubscribingChannelsOfUser(userId int) ([]*model.SubscribeRequest, *errors.AppError)
 }
 
+type Playlist interface {
+	IsChannelExist(channelId int) (bool, error)
+	IsTitlelUniqueForChannel(channelId int, title string) (bool, error)
+	CreatePlaylist(transaction *sql.Tx, channelId int, title string, description string) (int, *errors.AppError)
+	UpdatePlaylist(transaction *sql.Tx, channelId int, playlistId int, data map[string]string) *errors.AppError
+}
+
 type Database struct {
 	Users
 	Token
 	Channel
+	Playlist
 	dbSql *sqlx.DB
 }
 
 func New(dbSql *sqlx.DB) *Database {
 	return &Database{
-		Users:   NewUserPostgres(dbSql),
-		Token:   NewTokenPostgres(dbSql),
-		Channel: NewChannelPostgres(dbSql),
-		dbSql:   dbSql,
+		Users:    NewUserPostgres(dbSql),
+		Token:    NewTokenPostgres(dbSql),
+		Channel:  NewChannelPostgres(dbSql),
+		Playlist: NewPlaylistPostgres(dbSql),
+		dbSql:    dbSql,
 	}
 }
 

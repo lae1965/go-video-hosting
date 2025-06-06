@@ -28,17 +28,7 @@ func (handler *Handler) createChannel(ctx *gin.Context) {
 
 	channelId, err := handler.services.Channel.CreateChannel(int(userId), input.Title, input.Description)
 	if err != nil {
-		var code int
-		switch err.Type {
-		case errors.NotFound:
-			code = http.StatusBadRequest
-		case errors.NotUnique:
-			code = http.StatusConflict
-		default:
-			code = http.StatusInternalServerError
-		}
-
-		ErrorResponse(ctx, code, err.Message)
+		ErrorResponse(ctx, handler.ErrorType2RequestStatus(err.Type), err.Message)
 		return
 	}
 
@@ -66,17 +56,7 @@ func (handler *Handler) editChannel(ctx *gin.Context) {
 		"title":       input.UpdatingObject.Title,
 		"description": input.UpdatingObject.Description,
 	}); err != nil {
-		var code int
-		switch err.Type {
-		case errors.NotFound:
-			code = http.StatusBadRequest
-		case errors.NotUnique:
-			code = http.StatusConflict
-		default:
-			code = http.StatusInternalServerError
-		}
-
-		ErrorResponse(ctx, code, err.Message)
+		ErrorResponse(ctx, handler.ErrorType2RequestStatus(err.Type), err.Message)		
 		return
 	}
 
