@@ -64,6 +64,10 @@ func (s *PlaylistService) CreatePlaylist(idList string, title string, descriptio
 
 	idList = fmt.Sprintf("%s_%d", idList, playlistId)
 	errDB = s.dbPlaylist.UpdatePlaylist(transaction, int(channelId), playlistId, map[string]string{"idList": idList})
+	if errDB != nil {
+		errDB.Message = fmt.Sprintf("wrong saving idList to db: %s", errDB.Message)
+		return 0, errDB
+	}
 
 	return playlistId, nil
 }
@@ -101,10 +105,10 @@ func (s *PlaylistService) DeletePlaylist(playlistId int) *errors.AppError {
 	return s.dbPlaylist.DeletePlaylist(playlistId)
 }
 
-func (s *PlaylistService) GetPlaylistById(playlistId int) (*model.Playlist, *errors.AppError) {
+func (s *PlaylistService) GetPlaylistById(playlistId int) (*model.GetPlaylist, *errors.AppError) {
 	return s.dbPlaylist.GetPlaylistById(playlistId)
 }
 
-func (s *PlaylistService) GetAllPlaylistsOfChannel(channelId int) ([]*model.Playlist, *errors.AppError) {
+func (s *PlaylistService) GetAllPlaylistsOfChannel(channelId int) ([]*model.GetPlaylist, *errors.AppError) {
 	return s.dbPlaylist.GetAllPlaylistsOfChannel(channelId)
 }

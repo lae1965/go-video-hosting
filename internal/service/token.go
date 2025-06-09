@@ -27,7 +27,7 @@ func NewTokenService(dbToken database.Token) *TokenService {
 	return &TokenService{dbToken: dbToken}
 }
 
-func (tokenService *TokenService) CreateTokens(transaction *sql.Tx, user model.Users, refreshTokenId int) (*model.TokenResponse, error) {
+func (s *TokenService) CreateTokens(transaction *sql.Tx, user model.Users, refreshTokenId int) (*model.TokenResponse, error) {
 	createToken := func(claims CustomClaims, key string) (string, error) {
 		tok := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 		token, err := tok.SignedString([]byte(key))
@@ -58,7 +58,7 @@ func (tokenService *TokenService) CreateTokens(transaction *sql.Tx, user model.U
 		return nil, fmt.Errorf("error generating refreshToken: %s", refreshErr.Error())
 	}
 
-	tokenId, err := tokenService.saveRefreshTokenToDB(transaction, user.Id, refreshToken, refreshTokenId)
+	tokenId, err := s.saveRefreshTokenToDB(transaction, user.Id, refreshToken, refreshTokenId)
 	if err != nil {
 		return nil, fmt.Errorf("error saving refreshToken: %s", err.Error())
 	}
@@ -70,16 +70,16 @@ func (tokenService *TokenService) CreateTokens(transaction *sql.Tx, user model.U
 	}, nil
 }
 
-func (tokenService *TokenService) saveRefreshTokenToDB(transaction *sql.Tx, userId int, refreshToken string, refreshTokenId int) (int, error) {
+func (s *TokenService) saveRefreshTokenToDB(transaction *sql.Tx, userId int, refreshToken string, refreshTokenId int) (int, error) {
 	var err error
 
 	if refreshTokenId < 1 {
-		refreshTokenId, err = tokenService.dbToken.CreateToken(transaction, model.Token{
+		refreshTokenId, err = s.dbToken.CreateToken(transaction, model.Token{
 			Token:  refreshToken,
 			UserId: userId,
 		})
 	} else {
-		err = tokenService.dbToken.UpdateToken(refreshTokenId, refreshToken)
+		err = s.dbToken.UpdateToken(refreshTokenId, refreshToken)
 	}
 	if err != nil {
 		return 0, err
@@ -88,13 +88,13 @@ func (tokenService *TokenService) saveRefreshTokenToDB(transaction *sql.Tx, user
 	return refreshTokenId, nil
 }
 
-func (tokenService *TokenService) RemoveToken(tokenId int) error {
-	err := tokenService.dbToken.RemoveToken(tokenId)
+func (s *TokenService) RemoveToken(tokenId int) error {
+	err := s.dbToken.RemoveToken(tokenId)
 
 	return err
 }
 
-func (tokenService *TokenService) ValidateToken(tokenString string, tokenKey string) (int, error) {
+func (s *TokenService) ValidateToken(tokenString string, tokenKey string) (int, error) {
 	var claims CustomClaims
 
 	token, err := jwt.ParseWithClaims(tokenString, &claims, func(token *jwt.Token) (interface{}, error) {
@@ -111,10 +111,10 @@ func (tokenService *TokenService) ValidateToken(tokenString string, tokenKey str
 	return claims.UserId, nil
 }
 
-func (tokenService *TokenService) GetTokenIdByToken(token string) (int, error) {
-	return tokenService.dbToken.GetTokenIdByToken(token)
+func (s *TokenService) GetTokenIdByToken(token string) (int, error) {
+	return s.dbToken.GetTokenIdByToken(token)
 }
 
-func (tokenService *TokenService) DeleteTokenFromOtherDevices(userId int, refreshTokenId int) error {
-	return tokenService.dbToken.DeleteTokenFromOtherDevices(userId, refreshTokenId)
+func (s *TokenService) DeleteTokenFromOtherDevices(userId int, refreshTokenId int) error {
+	return s.dbToken.DeleteTokenFromOtherDevices(userId, refreshTokenId)
 }

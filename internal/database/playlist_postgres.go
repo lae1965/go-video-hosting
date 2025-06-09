@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/sirupsen/logrus"
 )
 
 type PlaylistPostgres struct {
@@ -19,10 +20,11 @@ func NewPlaylistPostgres(dbSql *sqlx.DB) *PlaylistPostgres {
 }
 
 func (pp *PlaylistPostgres) IsChannelExist(channelId int) (bool, error) {
-	query := "SELLECT EXISTS(SELECT 1 FROM CHANNEL WHERE id = $1)"
+	query := "SELECT EXISTS (SELECT 1 FROM CHANNEL WHERE id = $1)"
 
 	var exist bool
 	if err := pp.dbSql.Get(&exist, query, channelId); err != nil {
+		logrus.Println("Error in function IsChannelExist")
 		return false, err
 	}
 
@@ -30,10 +32,11 @@ func (pp *PlaylistPostgres) IsChannelExist(channelId int) (bool, error) {
 }
 
 func (pp *PlaylistPostgres) IsTitlelUniqueForChannel(channelId int, title string) (bool, error) {
-	query := "SELECT EXIST (SELECT 1 FROM PLAYLIST WHERE title = $1 AND channelId = $2)"
+	query := "SELECT EXISTS (SELECT 1 FROM PLAYLIST WHERE title = $1 AND channelId = $2)"
 
 	var exist bool
 	if err := pp.dbSql.Get(&exist, query, title, channelId); err != nil {
+		logrus.Println("Error in function IsTitlelUniqueForChannel")
 		return false, err
 	}
 
@@ -101,11 +104,12 @@ func (pp *PlaylistPostgres) DeletePlaylist(playlisyId int) *errors.AppError {
 	return nil
 }
 
-func (pp *PlaylistPostgres) GetPlaylistById(playlistId int) (*model.Playlist, *errors.AppError) {
+func (pp *PlaylistPostgres) GetPlaylistById(playlistId int) (*model.GetPlaylist, *errors.AppError) {
 	query := "SELECT * FROM PLAYLIST WHERE id = $1"
 
-	var result model.Playlist
+	var result model.GetPlaylist
 	if err := pp.dbSql.Get(&result, query, playlistId); err != nil {
+		logrus.Println("DB")
 		if err == sql.ErrNoRows {
 			return nil, errors.New(errors.NotFound, fmt.Sprintf("playlist with id = %d not exist", playlistId))
 		}
@@ -115,10 +119,10 @@ func (pp *PlaylistPostgres) GetPlaylistById(playlistId int) (*model.Playlist, *e
 	return &result, nil
 }
 
-func (pp *PlaylistPostgres) GetAllPlaylistsOfChannel(channelId int) ([]*model.Playlist, *errors.AppError) {
+func (pp *PlaylistPostgres) GetAllPlaylistsOfChannel(channelId int) ([]*model.GetPlaylist, *errors.AppError) {
 	query := "SELECT * FROM PLAYLIST WHERE channelId = $1"
 
-	var playlists []*model.Playlist
+	var playlists []*model.GetPlaylist
 	if err := pp.dbSql.Select(&playlists, query, channelId); err != nil {
 		return nil, errors.New(errors.UnknownError, err.Error())
 	}

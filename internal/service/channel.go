@@ -118,7 +118,7 @@ func (s *ChannelService) DeleteChannel(channelId int) *errors.AppError {
 	return nil
 }
 
-func (s *ChannelService) ToggleSubscribe(userId, channelId int) (*model.SubscribeRespose, *errors.AppError) {
+func (s *ChannelService) ToggleSubscribe(userId, channelId int) (*model.SubscribeResponse, *errors.AppError) {
 	var err *errors.AppError
 	transaction, errTr := s.createTransaction()
 	if errTr != nil {
@@ -145,7 +145,7 @@ func (s *ChannelService) ToggleSubscribe(userId, channelId int) (*model.Subscrib
 		return nil, err
 	}
 
-	return &model.SubscribeRespose{
+	return &model.SubscribeResponse{
 		IsSubscribe:      isSubscribe,
 		SubscribersCount: subscribersCount,
 	}, nil

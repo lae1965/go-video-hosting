@@ -11,15 +11,20 @@ type Playlist struct {
 }
 
 type CreatePlaylist struct {
-	IdList      string `json:"idList" validate:"requied, id_list_len_2"`
-	Title       string `json:"title" validate:"requied"`
+	IdList      string `json:"idList" validate:"required,id_list_len_2"`
+	Title       string `json:"title" validate:"requried"`
 	Description string `json:"description"`
 }
 
 type UpdatePlaylist struct {
-	IdList         string `json:"idList" validate:"requied, id_list_len_3"`
+	IdList         string `json:"idList" validate:"required,id_list_len_3"`
 	UpdatingObject struct {
 		Title       *string `json:"title"`
 		Description *string `json:"description"`
 	}
+}
+
+type GetPlaylist struct {
+	*Playlist
+	ChannelId int `json:"channelId"`
 }

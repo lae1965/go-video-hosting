@@ -6,6 +6,7 @@ import (
 	"go-video-hosting/internal/database"
 	"go-video-hosting/internal/errors"
 	"go-video-hosting/internal/model"
+	"mime/multipart"
 
 	"cnb.cool/ordermap/ordermap"
 )
@@ -15,7 +16,7 @@ type Users interface {
 	Login(user model.Users) (*model.UserResponse, *errors.AppError)
 	Logout(refreshTokenId int) error
 	Refresh(refreshToken string) (*model.UserResponse, *errors.AppError)
-	SaveAvatar(id int, fileName string) *errors.AppError
+	SaveAvatar(id int, fileHeader *multipart.FileHeader) *errors.AppError
 	GetAvatar(id int, sendChunk func(int64, string, []byte) error) *errors.AppError
 	DeleteAvatar(id int) *errors.AppError
 	UpdateUser(id int, data *ordermap.OrderMap) *errors.AppError
@@ -40,7 +41,7 @@ type Channel interface {
 	CreateChannel(userId int, title string, description string) (int, *errors.AppError)
 	UpdateChannel(userId int, channelId int, data map[string]string) *errors.AppError
 	DeleteChannel(channelId int) *errors.AppError
-	ToggleSubscribe(userId, channelId int) (*model.SubscribeRespose, *errors.AppError)
+	ToggleSubscribe(userId, channelId int) (*model.SubscribeResponse, *errors.AppError)
 	GetChannelById(userId, channelId int) (*model.GetChannelResponse, *errors.AppError)
 	GetAllChannelsOfUser(userId int) ([]*model.GetAllChannelsResponse, *errors.AppError)
 	GetAllIdListOfUser(userId int) ([]string, *errors.AppError)
@@ -50,8 +51,8 @@ type Playlist interface {
 	CreatePlaylist(idList string, title string, description string) (int, *errors.AppError)
 	UpdatePlaylist(idList string, data map[string]string) *errors.AppError
 	DeletePlaylist(playlistId int) *errors.AppError
-	GetPlaylistById(playlistId int) (*model.Playlist, *errors.AppError)
-	GetAllPlaylistsOfChannel(channelId int) ([]*model.Playlist, *errors.AppError)
+	GetPlaylistById(playlistId int) (*model.GetPlaylist, *errors.AppError)
+	GetAllPlaylistsOfChannel(channelId int) ([]*model.GetPlaylist, *errors.AppError)
 }
 
 type Service struct {

@@ -8,6 +8,7 @@ import (
 	"go-video-hosting/internal/database"
 	"go-video-hosting/internal/errors"
 	"go-video-hosting/internal/model"
+	"mime/multipart"
 
 	"os"
 	"strings"
@@ -37,9 +38,9 @@ func NewUserService(dbUser database.Users, token Token, CreateTransaction Callba
 	}
 }
 
-func (userService *UserService) CreateUser(user model.Users) (*model.UserCreateResponse, *errors.AppError) {
+func (s *UserService) CreateUser(user model.Users) (*model.UserCreateResponse, *errors.AppError) {
 	var appErr *errors.AppError
-	transaction, err := userService.createTransaction()
+	transaction, err := s.createTransaction()
 	if err != nil {
 		return nil, errors.New(errors.UnknownError, fmt.Sprintf("failed create transaction: %s", err.Error()))
 	}
@@ -52,14 +53,14 @@ func (userService *UserService) CreateUser(user model.Users) (*model.UserCreateR
 		}
 	}()
 
-	hash, err := userService.GenerateHashPassword(user.Password)
+	hash, err := s.GenerateHashPassword(user.Password)
 	if err != nil {
 		return nil, errors.New(errors.UnknownError, fmt.Sprintf("failed generate hashPassword: %s", err.Error()))
 	}
 	user.Password = hash
 	user.ActivateLink = uuid.New().String()
 
-	userId, appErr := userService.dbUser.CreateUser(transaction, user)
+	userId, appErr := s.dbUser.CreateUser(transaction, user)
 	if appErr != nil {
 		appErr.Message = fmt.Sprintf("failed saving new user: %s", appErr.Message)
 		return nil, appErr
@@ -67,7 +68,7 @@ func (userService *UserService) CreateUser(user model.Users) (*model.UserCreateR
 
 	user.Id = userId
 
-	tokenResponse, err := userService.token.CreateTokens(transaction, user, 0)
+	tokenResponse, err := s.token.CreateTokens(transaction, user, 0)
 	if err != nil {
 		return nil, errors.New(errors.UnknownError, fmt.Sprintf("failed creating tokens: %s", err.Error()))
 	}
@@ -104,13 +105,13 @@ func SendMail(email string, activateLink string) error {
 	return nil
 }
 
-func (userService *UserService) GenerateHashPassword(password string) (string, error) {
+func (s *UserService) GenerateHashPassword(password string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	return string(hash), err
 }
 
-func (userService *UserService) Login(user model.Users) (*model.UserResponse, *errors.AppError) {
-	newUser, err := userService.dbUser.GetUserByEmail(user.Email)
+func (s *UserService) Login(user model.Users) (*model.UserResponse, *errors.AppError) {
+	newUser, err := s.dbUser.GetUserByEmail(user.Email)
 	if err != nil {
 		return nil, errors.New(errors.NotFound, fmt.Sprintf("user with email %s not found: %s", user.Email, err.Error()))
 	}
@@ -119,7 +120,7 @@ func (userService *UserService) Login(user model.Users) (*model.UserResponse, *e
 		return nil, errors.New(errors.Unauthorization, fmt.Sprintf("wrong password: %s", err.Error()))
 	}
 
-	tokenResponse, err := userService.token.CreateTokens(nil, *newUser, 0)
+	tokenResponse, err := s.token.CreateTokens(nil, *newUser, 0)
 	if err != nil {
 		return nil, errors.New(errors.UnknownError, err.Error())
 	}
@@ -130,8 +131,8 @@ func (userService *UserService) Login(user model.Users) (*model.UserResponse, *e
 	}, nil
 }
 
-func (userService *UserService) Logout(refreshTokenId int) error {
-	err := userService.token.RemoveToken(refreshTokenId)
+func (s *UserService) Logout(refreshTokenId int) error {
+	err := s.token.RemoveToken(refreshTokenId)
 
 	if err != nil {
 		return fmt.Errorf("error removing token: %s", err.Error())
@@ -140,23 +141,23 @@ func (userService *UserService) Logout(refreshTokenId int) error {
 	return nil
 }
 
-func (userService *UserService) Refresh(refreshToken string) (*model.UserResponse, *errors.AppError) {
-	userId, err := userService.token.ValidateToken(refreshToken, os.Getenv("REFRESH_KEY"))
+func (s *UserService) Refresh(refreshToken string) (*model.UserResponse, *errors.AppError) {
+	userId, err := s.token.ValidateToken(refreshToken, os.Getenv("REFRESH_KEY"))
 	if err != nil {
 		return nil, errors.New(errors.Unauthorization, err.Error())
 	}
 
-	refreshTokenId, err := userService.token.GetTokenIdByToken(refreshToken)
+	refreshTokenId, err := s.token.GetTokenIdByToken(refreshToken)
 	if err != nil {
 		return nil, errors.New(errors.Unauthorization, fmt.Sprintf("refreshtoken is not found in DB: %s", err.Error()))
 	}
 
-	userFromDB, err := userService.dbUser.GetUserForRefreshById(userId)
+	userFromDB, err := s.dbUser.GetUserForRefreshById(userId)
 	if err != nil {
 		return nil, errors.New(errors.Unauthorization, fmt.Sprintf("user with such refreshtoken is not exist: %s", err.Error()))
 	}
 
-	tokenResponse, err := userService.token.CreateTokens(nil, *userFromDB, refreshTokenId)
+	tokenResponse, err := s.token.CreateTokens(nil, *userFromDB, refreshTokenId)
 	if err != nil {
 		return nil, errors.New(errors.Unauthorization, err.Error())
 	}
@@ -172,33 +173,33 @@ func (userService *UserService) Refresh(refreshToken string) (*model.UserRespons
 	}, nil
 }
 
-func (userService *UserService) SaveAvatar(id int, fileName string) *errors.AppError {
-	oldFileName, appErr := userService.dbUser.GetAvatarByUserId(id)
+func (s *UserService) SaveAvatar(id int, fileHeader *multipart.FileHeader) *errors.AppError {
+	oldFileName, appErr := s.dbUser.GetAvatarByUserId(id)
 	if appErr != nil {
 		return errors.New(appErr.Type, fmt.Sprintf("can't get old avatarFileName: %s", appErr.Message))
 	}
 
-	newFileName, err := userService.grpcClient.SendToGRPCServer(context.Background(), fileName)
+	newFileName, err := s.grpcClient.SendToGRPCServer(context.Background(), fileHeader)
 	if err != nil {
 		return errors.New(errors.UnknownError, fmt.Sprintf("can't save file to gRPC-server: %s", err.Error()))
 	}
 
 	om := ordermap.New()
 	om.Store("avatar", newFileName)
-	if err := userService.dbUser.UpdateUser(id, om); err != nil {
-		userService.grpcClient.DeleteFromGRPCServer(context.Background(), newFileName)
+	if err := s.dbUser.UpdateUser(id, om); err != nil {
+		s.grpcClient.DeleteFromGRPCServer(context.Background(), newFileName)
 		return errors.New(err.Type, fmt.Sprintf("can't save fileName to database: %s", err.Message))
 	}
 
 	if oldFileName != "" {
-		userService.grpcClient.DeleteFromGRPCServer(context.Background(), oldFileName)
+		s.grpcClient.DeleteFromGRPCServer(context.Background(), oldFileName)
 	}
 
 	return nil
 }
 
-func (userService *UserService) GetAvatar(id int, sendChunk func(int64, string, []byte) error) *errors.AppError {
-	avatarFileName, appErr := userService.dbUser.GetAvatarByUserId(id)
+func (s *UserService) GetAvatar(id int, sendChunk func(int64, string, []byte) error) *errors.AppError {
+	avatarFileName, appErr := s.dbUser.GetAvatarByUserId(id)
 	if appErr != nil {
 		appErr.Message = fmt.Sprintf("can't get avatarFileName: %s", appErr.Message)
 		return appErr
@@ -208,15 +209,15 @@ func (userService *UserService) GetAvatar(id int, sendChunk func(int64, string, 
 		return errors.New(errors.EmptyField, "this user has no avatar")
 	}
 
-	if err := userService.grpcClient.GetFromGRPCServer(context.Background(), avatarFileName, sendChunk); err != nil {
+	if err := s.grpcClient.GetFromGRPCServer(context.Background(), avatarFileName, sendChunk); err != nil {
 		return errors.New(errors.UnknownError, fmt.Sprintf("can't get avatar: %s", err.Error()))
 	}
 
 	return nil
 }
 
-func (userService *UserService) DeleteAvatar(id int) *errors.AppError {
-	avatarFileName, err := userService.dbUser.GetAvatarByUserId(id)
+func (s *UserService) DeleteAvatar(id int) *errors.AppError {
+	avatarFileName, err := s.dbUser.GetAvatarByUserId(id)
 	if err != nil {
 		return errors.New(err.Type, fmt.Sprintf("can't get avatarFileName: %s", err.Message))
 	}
@@ -227,28 +228,28 @@ func (userService *UserService) DeleteAvatar(id int) *errors.AppError {
 
 	om := ordermap.New()
 	om.Store("avatar", "")
-	if err := userService.dbUser.UpdateUser(id, om); err != nil {
+	if err := s.dbUser.UpdateUser(id, om); err != nil {
 		return errors.New(err.Type, fmt.Sprintf("can't delete avatarFileName from DB: %s", err.Message))
 	}
 
-	if err := userService.grpcClient.DeleteFromGRPCServer(context.Background(), avatarFileName); err != nil {
+	if err := s.grpcClient.DeleteFromGRPCServer(context.Background(), avatarFileName); err != nil {
 		return errors.New(errors.UnknownError, fmt.Sprintf("can't delete avatar from gRPC-server: %s", err.Error()))
 	}
 
 	return nil
 }
 
-func (userService *UserService) UpdateUser(id int, data *ordermap.OrderMap) *errors.AppError {
-	return userService.dbUser.UpdateUser(id, data)
+func (s *UserService) UpdateUser(id int, data *ordermap.OrderMap) *errors.AppError {
+	return s.dbUser.UpdateUser(id, data)
 }
 
-func (userService *UserService) DeleteUser(id int) *errors.AppError {
+func (s *UserService) DeleteUser(id int) *errors.AppError {
 	//TODO - удалить все видео user'а и аватар с gRPC - сервера
-	return userService.dbUser.DeleteUser(id)
+	return s.dbUser.DeleteUser(id)
 }
 
-func (userService *UserService) Activate(activateLink string) *errors.AppError {
-	userId, err := userService.dbUser.GetUserByActivateLink(activateLink)
+func (s *UserService) Activate(activateLink string) *errors.AppError {
+	userId, err := s.dbUser.GetUserByActivateLink(activateLink)
 	if err != nil {
 		err.Message = fmt.Sprintf("can not find user by activate link: %s", err.Message)
 		return err
@@ -256,7 +257,7 @@ func (userService *UserService) Activate(activateLink string) *errors.AppError {
 
 	om := ordermap.New()
 	om.Store("isActivate", true)
-	if err := userService.dbUser.UpdateUser(userId, om); err != nil {
+	if err := s.dbUser.UpdateUser(userId, om); err != nil {
 		err.Message = fmt.Sprintf("can not update field isActivate: %s", err.Message)
 		return err
 	}
@@ -264,19 +265,19 @@ func (userService *UserService) Activate(activateLink string) *errors.AppError {
 	return nil
 }
 
-func (userService *UserService) GetAll() ([]*model.FindUsers, error) {
-	return userService.dbUser.GetAll()
+func (s *UserService) GetAll() ([]*model.FindUsers, error) {
+	return s.dbUser.GetAll()
 }
 
-func (userService *UserService) GetById(id int) (*model.FindUsers, *errors.AppError) {
-	return userService.dbUser.GetById(id)
+func (s *UserService) GetById(id int) (*model.FindUsers, *errors.AppError) {
+	return s.dbUser.GetById(id)
 }
 
-func (userService *UserService) GetNickNameById(id int) (string, *errors.AppError) {
-	return userService.dbUser.GetNickNameById(id)
+func (s *UserService) GetNickNameById(id int) (string, *errors.AppError) {
+	return s.dbUser.GetNickNameById(id)
 }
 
-func (userService *UserService) CheckIsNickNameEmailUnique(nickName string, email string) (bool, string, error) {
+func (s *UserService) CheckIsNickNameEmailUnique(nickName string, email string) (bool, string, error) {
 	notUniqueList := []string{}
 	isUniqie := func(key string, value string) (bool, error) {
 		var isValueUnique bool
@@ -285,7 +286,7 @@ func (userService *UserService) CheckIsNickNameEmailUnique(nickName string, emai
 		if value == "" {
 			isValueUnique = true
 		} else {
-			isValueUnique, err = userService.dbUser.CheckIsUnique(key, value)
+			isValueUnique, err = s.dbUser.CheckIsUnique(key, value)
 			if err != nil {
 				return false, err
 			}
@@ -315,8 +316,8 @@ func (userService *UserService) CheckIsNickNameEmailUnique(nickName string, emai
 	return isEmailUnique && isNickNameUnique, message, nil
 }
 
-func (userService *UserService) ChangePassword(userId int, refreshTokenId int, oldPassword string, newPassword string) *errors.AppError {
-	dbPassword, appErr := userService.dbUser.GetPasswordByUserId(userId)
+func (s *UserService) ChangePassword(userId int, refreshTokenId int, oldPassword string, newPassword string) *errors.AppError {
+	dbPassword, appErr := s.dbUser.GetPasswordByUserId(userId)
 	if appErr != nil {
 		appErr.Message = fmt.Sprintf("wrong getting old Password from db: %s", appErr.Message)
 		return appErr
@@ -326,19 +327,19 @@ func (userService *UserService) ChangePassword(userId int, refreshTokenId int, o
 		return errors.New(errors.NotEqual, fmt.Sprintf("wrong old Password: %s", err.Error()))
 	}
 
-	hashPassword, err := userService.GenerateHashPassword(newPassword)
+	hashPassword, err := s.GenerateHashPassword(newPassword)
 	if err != nil {
 		return errors.New(errors.UnknownError, fmt.Sprintf("wrong generating hashPassword: %s", err.Error()))
 	}
 
 	om := ordermap.New()
 	om.Store("password", hashPassword)
-	if err := userService.dbUser.UpdateUser(userId, om); err != nil {
+	if err := s.dbUser.UpdateUser(userId, om); err != nil {
 		err.Message = fmt.Sprintf("wrong updating password in DB: %s", err.Message)
 		return err
 	}
 
-	if err := userService.token.DeleteTokenFromOtherDevices(userId, refreshTokenId); err != nil {
+	if err := s.token.DeleteTokenFromOtherDevices(userId, refreshTokenId); err != nil {
 		return errors.New(errors.UnknownError, fmt.Sprintf("wrong logouting user from other devices: %s", err.Error()))
 	}
 

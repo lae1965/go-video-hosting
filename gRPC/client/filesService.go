@@ -6,7 +6,7 @@ import (
 	"go-video-hosting/gRPC/proto"
 	"io"
 	"mime"
-	"os"
+	"mime/multipart"
 	"path/filepath"
 
 	"github.com/sirupsen/logrus"
@@ -27,8 +27,8 @@ func New(gprcServer *FilesGRPCServer) *FilesGRPCClient {
 	}
 }
 
-func (client *FilesGRPCClient) SendToGRPCServer(ctx context.Context, fileName string) (string, error) {
-	file, err := os.Open(fileName)
+func (client *FilesGRPCClient) SendToGRPCServer(ctx context.Context, fileHeader *multipart.FileHeader) (string, error) {
+	file, err := fileHeader.Open()
 	if err != nil {
 		logrus.Errorf("Ошибка открытия файла: %s", err.Error())
 		return "", err
@@ -43,7 +43,7 @@ func (client *FilesGRPCClient) SendToGRPCServer(ctx context.Context, fileName st
 
 	if err := stream.Send(&proto.FileSendRequest{
 		Request: &proto.FileSendRequest_FileName{
-			FileName: fileName,
+			FileName: fileHeader.Filename,
 		},
 	}); err != nil {
 		logrus.Errorf("Ошибка отправки имени файла: %s", err.Error())

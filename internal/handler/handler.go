@@ -39,8 +39,14 @@ func (h *Handler) ErrorType2RequestStatus(errType errors.ErrType) int {
 	switch errType {
 	case errors.NotFound:
 		code = http.StatusBadRequest
+	case errors.NotEqual:
+		code = http.StatusConflict
 	case errors.NotUnique:
 		code = http.StatusConflict
+	case errors.Unauthorization:
+		code = http.StatusUnauthorized
+	case errors.EmptyField:
+		code = http.StatusNoContent
 	default:
 		code = http.StatusInternalServerError
 	}

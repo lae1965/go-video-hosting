@@ -18,29 +18,29 @@ func NewChannelPostgres(dbSql *sqlx.DB) *ChannelPostgres {
 	return &ChannelPostgres{dbSql: dbSql}
 }
 
-func (channelPostgres *ChannelPostgres) IsUserExist(userId int) (bool, error) {
+func (cp *ChannelPostgres) IsUserExist(userId int) (bool, error) {
 	query := "SELECT EXISTS (SELECT 1 FROM USERS WHERE id = $1)"
 
 	var exist bool
-	if err := channelPostgres.dbSql.Get(&exist, query, userId); err != nil {
+	if err := cp.dbSql.Get(&exist, query, userId); err != nil {
 		return false, err
 	}
 
 	return exist, nil
 }
 
-func (channelPostgres *ChannelPostgres) IsTitlelUniqueForUser(userId int, title string) (bool, error) {
+func (cp *ChannelPostgres) IsTitlelUniqueForUser(userId int, title string) (bool, error) {
 	query := "SELECT EXISTS (SELECT 1 FROM CHANNEL WHERE title = $1 AND userId = $2)"
 
 	var exist bool
-	if err := channelPostgres.dbSql.Get(&exist, query, title, userId); err != nil {
+	if err := cp.dbSql.Get(&exist, query, title, userId); err != nil {
 		return false, err
 	}
 
 	return !exist, nil
 }
 
-func (channelPostgres *ChannelPostgres) CreateChannel(transaction *sql.Tx, userId int, title string, description string) (int, *errors.AppError) {
+func (cp *ChannelPostgres) CreateChannel(transaction *sql.Tx, userId int, title string, description string) (int, *errors.AppError) {
 	query := "INSERT INTO CHANNEL (userId, title, description) VALUES ($1, $2, $3) RETURNING id"
 
 	row := transaction.QueryRow(query, userId, title, description)
@@ -53,7 +53,7 @@ func (channelPostgres *ChannelPostgres) CreateChannel(transaction *sql.Tx, userI
 	return id, nil
 }
 
-func (channelPostgres *ChannelPostgres) UpdateChannel(userId int, channelId int, data map[string]string) *errors.AppError {
+func (cp *ChannelPostgres) UpdateChannel(userId int, channelId int, data map[string]string) *errors.AppError {
 	clauses := []string{}
 	args := []interface{}{}
 	i := 1
@@ -68,7 +68,7 @@ func (channelPostgres *ChannelPostgres) UpdateChannel(userId int, channelId int,
 
 	query := fmt.Sprintf("UPDATE CHANNEL SET %s WHERE id = $%d AND userId = $%d", strings.Join(clauses, ", "), i, i+1)
 
-	result, err := channelPostgres.dbSql.Exec(query, args...)
+	result, err := cp.dbSql.Exec(query, args...)
 	if err != nil {
 		return errors.New(errors.UnknownError, err.Error())
 	}
@@ -80,7 +80,7 @@ func (channelPostgres *ChannelPostgres) UpdateChannel(userId int, channelId int,
 	return nil
 }
 
-func (channelPostgres *ChannelPostgres) DeleteChannel(transaction *sql.Tx, channelId int) (int, *errors.AppError) {
+func (cp *ChannelPostgres) DeleteChannel(transaction *sql.Tx, channelId int) (int, *errors.AppError) {
 	query := "DELETE FROM CHANNEL WHERE id = $1 RETURNING userId"
 	var userId int
 
@@ -95,8 +95,8 @@ func (channelPostgres *ChannelPostgres) DeleteChannel(transaction *sql.Tx, chann
 	return userId, nil
 }
 
-func (channelPostgres *ChannelPostgres) ToggleSubscribe(transaction *sql.Tx, userId, channelId int) (bool, *errors.AppError) {
-	isUserExist, err := channelPostgres.IsUserExist(userId)
+func (cp *ChannelPostgres) ToggleSubscribe(transaction *sql.Tx, userId, channelId int) (bool, *errors.AppError) {
+	isUserExist, err := cp.IsUserExist(userId)
 	if err != nil {
 		return false, errors.New(errors.UnknownError, err.Error())
 	}
@@ -107,7 +107,7 @@ func (channelPostgres *ChannelPostgres) ToggleSubscribe(transaction *sql.Tx, use
 	query := "SELECT EXISTS (SELECT 1 FROM SUBSCRIBER WHERE userId = $1 AND channelId = $2)"
 
 	var exist bool
-	if err := channelPostgres.dbSql.Get(&exist, query, userId, channelId); err != nil {
+	if err := cp.dbSql.Get(&exist, query, userId, channelId); err != nil {
 		return false, errors.New(errors.UnknownError, err.Error())
 	}
 
@@ -129,7 +129,7 @@ func (channelPostgres *ChannelPostgres) ToggleSubscribe(transaction *sql.Tx, use
 	return !exist, nil
 }
 
-func (channelPostgres *ChannelPostgres) ChangeSubscribersCount(transaction *sql.Tx, channelId int, isNegative bool) (int, *errors.AppError) {
+func (cp *ChannelPostgres) ChangeSubscribersCount(transaction *sql.Tx, channelId int, isNegative bool) (int, *errors.AppError) {
 	delta := 1
 	if isNegative {
 		delta = -1
@@ -149,11 +149,11 @@ func (channelPostgres *ChannelPostgres) ChangeSubscribersCount(transaction *sql.
 	return subscribersCount, nil
 }
 
-func (channelPostgres *ChannelPostgres) GetChannelById(channelId int) (*model.GetChannelFromDB, *errors.AppError) {
+func (cp *ChannelPostgres) GetChannelById(channelId int) (*model.GetChannelFromDB, *errors.AppError) {
 	query := "SELECT * FROM CHANNEL WHERE id = $1"
 
 	var result model.GetChannelFromDB
-	if err := channelPostgres.dbSql.Get(&result, query, channelId); err != nil {
+	if err := cp.dbSql.Get(&result, query, channelId); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errors.New(errors.NotFound, fmt.Sprintf("channel with Id = %d not exist", channelId))
 		}
@@ -163,29 +163,29 @@ func (channelPostgres *ChannelPostgres) GetChannelById(channelId int) (*model.Ge
 	return &result, nil
 }
 
-func (channelPostgres *ChannelPostgres) IsSubscribe(userId, channelId int) (bool, *errors.AppError) {
+func (cp *ChannelPostgres) IsSubscribe(userId, channelId int) (bool, *errors.AppError) {
 	query := "SELECT EXISTS (SELECT 1 FROM SUBSCRIBER WHERE userId = $1 AND channelId = $2)"
 
 	var isExist bool
-	if err := channelPostgres.dbSql.Get(&isExist, query, userId, channelId); err != nil {
+	if err := cp.dbSql.Get(&isExist, query, userId, channelId); err != nil {
 		return false, errors.New(errors.UnknownError, err.Error())
 	}
 
 	return isExist, nil
 }
 
-func (channelPostgres *ChannelPostgres) GetAllChannelsOfUser(userId int) ([]*model.GetChannelFromDB, *errors.AppError) {
+func (cp *ChannelPostgres) GetAllChannelsOfUser(userId int) ([]*model.GetChannelFromDB, *errors.AppError) {
 	query := "SELECT * FROM CHANNEL WHERE userId = $1"
 
 	var channels []*model.GetChannelFromDB
-	if err := channelPostgres.dbSql.Select(&channels, query, userId); err != nil {
+	if err := cp.dbSql.Select(&channels, query, userId); err != nil {
 		return nil, errors.New(errors.UnknownError, err.Error())
 	}
 
 	return channels, nil
 }
 
-func (channelPostgres *ChannelPostgres) GetSubscribingChannelsOfUser(userId int) ([]*model.SubscribeRequest, *errors.AppError) {
+func (cp *ChannelPostgres) GetSubscribingChannelsOfUser(userId int) ([]*model.SubscribeRequest, *errors.AppError) {
 	query := `
 		SELECT 
 			channel.id AS channelId, 
@@ -198,7 +198,7 @@ func (channelPostgres *ChannelPostgres) GetSubscribingChannelsOfUser(userId int)
 	`
 
 	var response []*model.SubscribeRequest
-	if err := channelPostgres.dbSql.Select(&response, query, userId); err != nil {
+	if err := cp.dbSql.Select(&response, query, userId); err != nil {
 		return nil, errors.New(errors.UnknownError, err.Error())
 	}
 	if len(response) == 0 {

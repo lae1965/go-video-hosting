@@ -33,7 +33,7 @@ type SubscribeRequest struct {
 	ChannelId int `json:"id" validate:"required,min=1"`
 }
 
-type SubscribeRespose struct {
+type SubscribeResponse struct {
 	IsSubscribe      bool `json:"isSubscribe"`
 	SubscribersCount int  `json:"subscribersCount"`
 }

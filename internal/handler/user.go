@@ -28,14 +28,7 @@ func (h *Handler) registration(ctx *gin.Context) {
 
 	userResponse, err := h.services.CreateUser(input)
 	if err != nil {
-		var code int
-		switch err.Type {
-		case errors.NotUnique:
-			code = http.StatusConflict
-		default:
-			code = http.StatusInternalServerError
-		}
-		ErrorResponse(ctx, code, err.Message)
+		ErrorResponse(ctx, h.ErrorType2RequestStatus(err.Type), err.Message)
 		return
 	}
 
@@ -60,16 +53,7 @@ func (h *Handler) login(ctx *gin.Context) {
 
 	userResponse, err := h.services.Login(input)
 	if err != nil {
-		var code int
-		switch err.Type {
-		case errors.NotFound:
-			code = http.StatusBadRequest
-		case errors.Unauthorization:
-			code = http.StatusUnauthorized
-		default:
-			code = http.StatusInternalServerError
-		}
-		ErrorResponse(ctx, code, err.Message)
+		ErrorResponse(ctx, h.ErrorType2RequestStatus(err.Type), err.Message)
 		return
 	}
 
@@ -193,17 +177,7 @@ func (h *Handler) editUser(ctx *gin.Context) {
 	}
 
 	if appErr := h.services.UpdateUser(id, omUser); appErr != nil {
-		var code int
-		switch appErr.Type {
-		case errors.NotUnique:
-			code = http.StatusConflict
-		case errors.NotFound:
-			code = http.StatusNotFound
-		default:
-			code = http.StatusInternalServerError
-		}
-
-		ErrorResponse(ctx, code, appErr.Message)
+		ErrorResponse(ctx, h.ErrorType2RequestStatus(appErr.Type), appErr.Message)
 		return
 	}
 
@@ -220,15 +194,7 @@ func (h *Handler) deleteUser(ctx *gin.Context) {
 	}
 
 	if err := h.services.DeleteUser(id); err != nil {
-		var code int
-		switch err.Type {
-		case errors.NotFound:
-			code = http.StatusNotFound
-		default:
-			code = http.StatusInternalServerError
-		}
-
-		ErrorResponse(ctx, code, err.Message)
+		ErrorResponse(ctx, h.ErrorType2RequestStatus(err.Type), err.Message)
 		return
 	}
 
@@ -243,15 +209,7 @@ func (h *Handler) activate(ctx *gin.Context) {
 	}
 
 	if err := h.services.Activate(activateLink); err != nil {
-		var code int
-		switch err.Type {
-		case errors.NotFound:
-			code = http.StatusNotFound
-		default:
-			code = http.StatusInternalServerError
-		}
-
-		ErrorResponse(ctx, code, err.Message)
+		ErrorResponse(ctx, h.ErrorType2RequestStatus(err.Type), err.Message)
 		return
 	}
 
@@ -269,15 +227,7 @@ func (h *Handler) getMin(ctx *gin.Context) {
 
 	nickName, appErr := h.services.GetNickNameById(id)
 	if appErr != nil {
-		var code int
-		switch appErr.Type {
-		case errors.NotFound:
-			code = http.StatusNotFound
-		default:
-			code = http.StatusInternalServerError
-		}
-
-		ErrorResponse(ctx, code, appErr.Message)
+		ErrorResponse(ctx, h.ErrorType2RequestStatus(appErr.Type), appErr.Message)
 		return
 	}
 
@@ -296,15 +246,7 @@ func (h *Handler) getById(ctx *gin.Context) {
 
 	user, appErr := h.services.GetById(id)
 	if appErr != nil {
-		var code int
-		switch appErr.Type {
-		case errors.NotFound:
-			code = http.StatusNotFound
-		default:
-			code = http.StatusInternalServerError
-		}
-
-		ErrorResponse(ctx, code, appErr.Message)
+		ErrorResponse(ctx, h.ErrorType2RequestStatus(appErr.Type), appErr.Message)
 		return
 	}
 
@@ -330,27 +272,19 @@ func (h *Handler) saveAvatar(ctx *gin.Context) {
 		return
 	}
 
-	file, err := ctx.FormFile("file")
+	fileHeader, err := ctx.FormFile("file")
 	if err != nil {
 		ErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if err := h.validators.Validate.Var(file, "avatar"); err != nil {
+	if err := h.validators.Validate.Var(fileHeader, "avatar"); err != nil {
 		ErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if err := h.services.SaveAvatar(id, file.Filename); err != nil {
-		var code int
-		switch err.Type {
-		case errors.NotFound:
-			code = http.StatusNotFound
-		default:
-			code = http.StatusInternalServerError
-		}
-
-		ErrorResponse(ctx, code, err.Message)
+	if err := h.services.SaveAvatar(id, fileHeader); err != nil {
+		ErrorResponse(ctx, h.ErrorType2RequestStatus(err.Type), err.Message)
 		return
 	}
 
@@ -379,17 +313,7 @@ func (h *Handler) getAvatar(ctx *gin.Context) {
 	})
 
 	if appErr != nil {
-		var code int
-		switch appErr.Type {
-		case errors.NotFound:
-			code = http.StatusNotFound
-		case errors.EmptyField:
-			code = http.StatusNoContent
-		default:
-			code = http.StatusInternalServerError
-		}
-
-		ErrorResponse(ctx, code, appErr.Message)
+		ErrorResponse(ctx, h.ErrorType2RequestStatus(appErr.Type), appErr.Message)
 	}
 }
 
@@ -403,17 +327,7 @@ func (h *Handler) deleteAvatar(ctx *gin.Context) {
 	}
 
 	if err := h.services.DeleteAvatar(id); err != nil {
-		var code int
-		switch err.Type {
-		case errors.NotFound:
-			code = http.StatusNotFound
-		case errors.EmptyField:
-			code = http.StatusNotFound
-		default:
-			code = http.StatusInternalServerError
-		}
-
-		ErrorResponse(ctx, code, err.Message)
+		ErrorResponse(ctx, h.ErrorType2RequestStatus(err.Type), err.Message)
 		return
 	}
 
@@ -469,17 +383,7 @@ func (h *Handler) changePassword(ctx *gin.Context) {
 	}
 
 	if err := h.services.ChangePassword(input.Id, refreshTokenId, input.OldPassword, input.NewPassword); err != nil {
-		var code int
-		switch err.Type {
-		case errors.NotFound:
-			code = http.StatusNotFound
-		case errors.NotEqual:
-			code = http.StatusConflict
-		default:
-			code = http.StatusInternalServerError
-		}
-
-		ErrorResponse(ctx, code, err.Message)
+		ErrorResponse(ctx, h.ErrorType2RequestStatus(err.Type), err.Message)
 		return
 	}
 

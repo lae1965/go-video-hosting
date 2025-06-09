@@ -20,7 +20,7 @@ func NewUserPostgres(dbSql *sqlx.DB) *UserPostgres {
 	return &UserPostgres{dbSql: dbSql}
 }
 
-func (userPostgres *UserPostgres) CreateUser(transaction *sql.Tx, user model.Users) (int, *errors.AppError) {
+func (up *UserPostgres) CreateUser(transaction *sql.Tx, user model.Users) (int, *errors.AppError) {
 	query := "INSERT INTO USERS (nickName, email, password, activateLink) values ($1, $2, $3, $4) RETURNING id"
 
 	row := transaction.QueryRow(query, user.NickName, user.Email, user.Password, user.ActivateLink)
@@ -37,21 +37,21 @@ func (userPostgres *UserPostgres) CreateUser(transaction *sql.Tx, user model.Use
 	return id, nil
 }
 
-func (userPostgres *UserPostgres) GetUserByEmail(email string) (*model.Users, error) {
+func (up *UserPostgres) GetUserByEmail(email string) (*model.Users, error) {
 	query := "SELECT * FROM USERS WHERE email=$1"
 
 	var user model.Users
-	if err := userPostgres.dbSql.Get(&user, query, email); err != nil {
+	if err := up.dbSql.Get(&user, query, email); err != nil {
 		return nil, err
 	}
 
 	return &user, nil
 }
 
-func (userPostgres *UserPostgres) GetUserForRefreshById(id int) (*model.Users, error) {
+func (up *UserPostgres) GetUserForRefreshById(id int) (*model.Users, error) {
 	query := "SELECT id, nickName, email, role FROM USERS WHERE id=$1"
 
-	row := userPostgres.dbSql.QueryRow(query, id)
+	row := up.dbSql.QueryRow(query, id)
 
 	var user model.Users
 	if err := row.Scan(&user.Id, &user.NickName, &user.Email, &user.Role); err != nil {
@@ -61,10 +61,10 @@ func (userPostgres *UserPostgres) GetUserForRefreshById(id int) (*model.Users, e
 	return &user, nil
 }
 
-func (userPostgres *UserPostgres) GetAvatarByUserId(userId int) (string, *errors.AppError) {
+func (up *UserPostgres) GetAvatarByUserId(userId int) (string, *errors.AppError) {
 	query := "SELECT avatar FROM USERS WHERE id=$1"
 
-	row := userPostgres.dbSql.QueryRow(query, userId)
+	row := up.dbSql.QueryRow(query, userId)
 
 	var avatar string
 	if err := row.Scan(&avatar); err != nil {
@@ -77,7 +77,7 @@ func (userPostgres *UserPostgres) GetAvatarByUserId(userId int) (string, *errors
 	return avatar, nil
 }
 
-func (userPostgres *UserPostgres) UpdateUser(id int, data *ordermap.OrderMap) *errors.AppError {
+func (up *UserPostgres) UpdateUser(id int, data *ordermap.OrderMap) *errors.AppError {
 	clauses := []string{}
 	args := []interface{}{}
 	i := 1
@@ -92,7 +92,7 @@ func (userPostgres *UserPostgres) UpdateUser(id int, data *ordermap.OrderMap) *e
 
 	query := fmt.Sprintf("UPDATE USERS SET %s WHERE id = $%d", strings.Join(clauses, ", "), i)
 
-	result, err := userPostgres.dbSql.Exec(query, args...)
+	result, err := up.dbSql.Exec(query, args...)
 	if err != nil {
 		if pqErr, ok := err.(*pq.Error); ok {
 			if pqErr.Code == UniqueViolation {
@@ -108,10 +108,10 @@ func (userPostgres *UserPostgres) UpdateUser(id int, data *ordermap.OrderMap) *e
 	return nil
 }
 
-func (userPostgres *UserPostgres) DeleteUser(id int) *errors.AppError {
+func (up *UserPostgres) DeleteUser(id int) *errors.AppError {
 	query := "DELETE FROM USERS WHERE id = $1"
 
-	result, err := userPostgres.dbSql.Exec(query, id)
+	result, err := up.dbSql.Exec(query, id)
 	if err != nil {
 		return errors.New(errors.UnknownError, err.Error())
 	}
@@ -123,11 +123,11 @@ func (userPostgres *UserPostgres) DeleteUser(id int) *errors.AppError {
 	return nil
 }
 
-func (userPostgres *UserPostgres) GetUserByActivateLink(activateLink string) (int, *errors.AppError) {
+func (up *UserPostgres) GetUserByActivateLink(activateLink string) (int, *errors.AppError) {
 	query := "SELECT id FROM USERS WHERE activateLink = $1"
 
 	var id int
-	if err := userPostgres.dbSql.Get(&id, query, activateLink); err != nil {
+	if err := up.dbSql.Get(&id, query, activateLink); err != nil {
 		if err == sql.ErrNoRows {
 			return 0, errors.New(errors.NotFound, fmt.Sprintf("user with activateLink = %s not exist", activateLink))
 		}
@@ -137,22 +137,22 @@ func (userPostgres *UserPostgres) GetUserByActivateLink(activateLink string) (in
 	return id, nil
 }
 
-func (userPostgres *UserPostgres) GetAll() ([]*model.FindUsers, error) {
+func (up *UserPostgres) GetAll() ([]*model.FindUsers, error) {
 	query := "SELECT id, nickName, email, firstName, lastName, birthDate, role, isBanned, channelsCount, createTimestamp FROM USERS"
 
 	users := []*model.FindUsers{}
-	if err := userPostgres.dbSql.Select(&users, query); err != nil {
+	if err := up.dbSql.Select(&users, query); err != nil {
 		return nil, err
 	}
 
 	return users, nil
 }
 
-func (userPostgres *UserPostgres) GetById(id int) (*model.FindUsers, *errors.AppError) {
+func (up *UserPostgres) GetById(id int) (*model.FindUsers, *errors.AppError) {
 	query := "SELECT id, nickName, email, firstName, lastName, birthDate, role, isBanned, channelsCount, createTimestamp FROM USERS WHERE id = $1"
 
 	var user model.FindUsers
-	if err := userPostgres.dbSql.Get(&user, query, id); err != nil {
+	if err := up.dbSql.Get(&user, query, id); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errors.New(errors.NotFound, fmt.Sprintf("user with Id = %d not exist", id))
 		}
@@ -162,11 +162,11 @@ func (userPostgres *UserPostgres) GetById(id int) (*model.FindUsers, *errors.App
 	return &user, nil
 }
 
-func (userPostgres *UserPostgres) GetNickNameById(id int) (string, *errors.AppError) {
+func (up *UserPostgres) GetNickNameById(id int) (string, *errors.AppError) {
 	query := "SELECT nickName FROM USERS WHERE id = $1"
 
 	var nickName string
-	if err := userPostgres.dbSql.Get(&nickName, query, id); err != nil {
+	if err := up.dbSql.Get(&nickName, query, id); err != nil {
 		if err == sql.ErrNoRows {
 			return "", errors.New(errors.NotFound, fmt.Sprintf("user with Id = %d not exist", id))
 		}
@@ -176,22 +176,22 @@ func (userPostgres *UserPostgres) GetNickNameById(id int) (string, *errors.AppEr
 	return nickName, nil
 }
 
-func (userPostgres *UserPostgres) CheckIsUnique(key string, value string) (bool, error) {
+func (up *UserPostgres) CheckIsUnique(key string, value string) (bool, error) {
 	query := fmt.Sprintf("SELECT EXISTS (SELECT 1 FROM USERS WHERE %s = $1)", key)
 
 	var exist bool
-	if err := userPostgres.dbSql.Get(&exist, query, value); err != nil {
+	if err := up.dbSql.Get(&exist, query, value); err != nil {
 		return false, err
 	}
 
 	return !exist, nil
 }
 
-func (userPostgres *UserPostgres) GetPasswordByUserId(userId int) (string, *errors.AppError) {
+func (up *UserPostgres) GetPasswordByUserId(userId int) (string, *errors.AppError) {
 	query := "SELECT password FROM USERS WHERE id = $1"
 
 	var password string
-	if err := userPostgres.dbSql.Get(&password, query, userId); err != nil {
+	if err := up.dbSql.Get(&password, query, userId); err != nil {
 		if err == sql.ErrNoRows {
 			return "", errors.New(errors.NotFound, fmt.Sprintf("user with Id = %d not exist", userId))
 		}
@@ -201,7 +201,7 @@ func (userPostgres *UserPostgres) GetPasswordByUserId(userId int) (string, *erro
 	return password, nil
 }
 
-func (userPostgres *UserPostgres) ChangeChannelsCountOfUser(transaction *sql.Tx, userId int, isIncrement bool) *errors.AppError {
+func (up *UserPostgres) ChangeChannelsCountOfUser(transaction *sql.Tx, userId int, isIncrement bool) *errors.AppError {
 	query := "UPDATE USERS SET channelsCount = channelsCount + $1 WHERE id = $2"
 	delta := 1
 	if !isIncrement {

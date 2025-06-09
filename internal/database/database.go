@@ -55,8 +55,8 @@ type Playlist interface {
 	CreatePlaylist(transaction *sql.Tx, channelId int, title string, description string) (int, *errors.AppError)
 	UpdatePlaylist(transaction *sql.Tx, channelId int, playlistId int, data map[string]string) *errors.AppError
 	DeletePlaylist(playlisyId int) *errors.AppError
-	GetPlaylistById(playlistId int) (*model.Playlist, *errors.AppError)
-	GetAllPlaylistsOfChannel(channelId int) ([]*model.Playlist, *errors.AppError)
+	GetPlaylistById(playlistId int) (*model.GetPlaylist, *errors.AppError)
+	GetAllPlaylistsOfChannel(channelId int) ([]*model.GetPlaylist, *errors.AppError)
 }
 
 type Database struct {
