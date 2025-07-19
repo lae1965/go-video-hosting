@@ -40,7 +40,7 @@ func (cp *ChannelPostgres) IsTitlelUniqueForUser(userId int, title string) (bool
 	return !exist, nil
 }
 
-func (cp *ChannelPostgres) CreateChannel(transaction *sql.Tx, userId int, title string, description string) (int, *errors.AppError) {
+func (cp *ChannelPostgres) CreateChannel(transaction *sqlx.Tx, userId int, title string, description string) (int, *errors.AppError) {
 	query := "INSERT INTO CHANNEL (userId, title, description) VALUES ($1, $2, $3) RETURNING id"
 
 	row := transaction.QueryRow(query, userId, title, description)
@@ -80,7 +80,7 @@ func (cp *ChannelPostgres) UpdateChannel(userId int, channelId int, data map[str
 	return nil
 }
 
-func (cp *ChannelPostgres) DeleteChannel(transaction *sql.Tx, channelId int) (int, *errors.AppError) {
+func (cp *ChannelPostgres) DeleteChannel(transaction *sqlx.Tx, channelId int) (int, *errors.AppError) {
 	query := "DELETE FROM CHANNEL WHERE id = $1 RETURNING userId"
 	var userId int
 
@@ -95,7 +95,7 @@ func (cp *ChannelPostgres) DeleteChannel(transaction *sql.Tx, channelId int) (in
 	return userId, nil
 }
 
-func (cp *ChannelPostgres) ToggleSubscribe(transaction *sql.Tx, userId, channelId int) (bool, *errors.AppError) {
+func (cp *ChannelPostgres) ToggleSubscribe(transaction *sqlx.Tx, userId, channelId int) (bool, *errors.AppError) {
 	isUserExist, err := cp.IsUserExist(userId)
 	if err != nil {
 		return false, errors.New(errors.UnknownError, err.Error())
@@ -129,7 +129,7 @@ func (cp *ChannelPostgres) ToggleSubscribe(transaction *sql.Tx, userId, channelI
 	return !exist, nil
 }
 
-func (cp *ChannelPostgres) ChangeSubscribersCount(transaction *sql.Tx, channelId int, isNegative bool) (int, *errors.AppError) {
+func (cp *ChannelPostgres) ChangeSubscribersCount(transaction *sqlx.Tx, channelId int, isNegative bool) (int, *errors.AppError) {
 	delta := 1
 	if isNegative {
 		delta = -1

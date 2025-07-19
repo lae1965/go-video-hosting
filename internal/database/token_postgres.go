@@ -15,7 +15,7 @@ func NewTokenPostgres(dbSql *sqlx.DB) *TokenPostgres {
 	return &TokenPostgres{dbSql: dbSql}
 }
 
-func (tp *TokenPostgres) CreateToken(transaction *sql.Tx, token model.Token) (int, error) {
+func (tp *TokenPostgres) CreateToken(transaction *sqlx.Tx, token model.Token) (int, error) {
 	var row *sql.Row
 	query := "INSERT INTO TOKEN (token, userId) values ($1, $2) RETURNING id"
 

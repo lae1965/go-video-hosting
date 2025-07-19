@@ -20,7 +20,7 @@ func NewUserPostgres(dbSql *sqlx.DB) *UserPostgres {
 	return &UserPostgres{dbSql: dbSql}
 }
 
-func (up *UserPostgres) CreateUser(transaction *sql.Tx, user model.Users) (int, *errors.AppError) {
+func (up *UserPostgres) CreateUser(transaction *sqlx.Tx, user model.Users) (int, *errors.AppError) {
 	query := "INSERT INTO USERS (nickName, email, password, activateLink) values ($1, $2, $3, $4) RETURNING id"
 
 	row := transaction.QueryRow(query, user.NickName, user.Email, user.Password, user.ActivateLink)
@@ -201,7 +201,7 @@ func (up *UserPostgres) GetPasswordByUserId(userId int) (string, *errors.AppErro
 	return password, nil
 }
 
-func (up *UserPostgres) ChangeChannelsCountOfUser(transaction *sql.Tx, userId int, isIncrement bool) *errors.AppError {
+func (up *UserPostgres) ChangeChannelsCountOfUser(transaction *sqlx.Tx, userId int, isIncrement bool) *errors.AppError {
 	query := "UPDATE USERS SET channelsCount = channelsCount + $1 WHERE id = $2"
 	delta := 1
 	if !isIncrement {

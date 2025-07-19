@@ -1,7 +1,6 @@
 package service
 
 import (
-	"database/sql"
 	"fmt"
 	"go-video-hosting/internal/database"
 	"go-video-hosting/internal/model"
@@ -9,6 +8,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/jmoiron/sqlx"
 )
 
 type CustomClaims struct {
@@ -27,7 +27,7 @@ func NewTokenService(dbToken database.Token) *TokenService {
 	return &TokenService{dbToken: dbToken}
 }
 
-func (s *TokenService) CreateTokens(transaction *sql.Tx, user model.Users, refreshTokenId int) (*model.TokenResponse, error) {
+func (s *TokenService) CreateTokens(transaction *sqlx.Tx, user model.Users, refreshTokenId int) (*model.TokenResponse, error) {
 	createToken := func(claims CustomClaims, key string) (string, error) {
 		tok := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 		token, err := tok.SignedString([]byte(key))
@@ -70,7 +70,7 @@ func (s *TokenService) CreateTokens(transaction *sql.Tx, user model.Users, refre
 	}, nil
 }
 
-func (s *TokenService) saveRefreshTokenToDB(transaction *sql.Tx, userId int, refreshToken string, refreshTokenId int) (int, error) {
+func (s *TokenService) saveRefreshTokenToDB(transaction *sqlx.Tx, userId int, refreshToken string, refreshTokenId int) (int, error) {
 	var err error
 
 	if refreshTokenId < 1 {

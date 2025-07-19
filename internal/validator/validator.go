@@ -8,7 +8,13 @@ import (
 	"unicode"
 
 	"github.com/go-playground/validator/v10"
+	"slices"
 )
+
+var avatarExtentions = []string{".png", ".jpeg", ".jpg", ".svg", ".gif", ".webp", ".avif"}
+
+var videoExtensions = []string{
+	".3gp", ".avi", ".flv", ".m4v", ".mkv", ".mov", ".mp4", ".mpeg", ".mpg", ".wmv", ".webm"}
 
 type Validator struct {
 	Validate *validator.Validate
@@ -19,15 +25,16 @@ func New() *Validator {
 		Validate: validator.New(),
 	}
 	validator.Validate.RegisterValidation("password", PasswordValidator)
-	validator.Validate.RegisterValidation("avatar", AvatarValidator)
+	validator.Validate.RegisterValidation("avatar", fileExtentionValidator(avatarExtentions))
+	validator.Validate.RegisterValidation("videofile", fileExtentionValidator(videoExtensions))
+	validator.Validate.RegisterValidation("hash", VideoHashExtentionValidator)
 	validator.Validate.RegisterValidation("id_list_len_1", idListValidator(1))
 	validator.Validate.RegisterValidation("id_list_len_2", idListValidator(2))
 	validator.Validate.RegisterValidation("id_list_len_3", idListValidator(3))
+	validator.Validate.RegisterValidation("id_list_len_4", idListValidator(4))
 
 	return validator
 }
-
-var fileExtentions = [7]string{".png", ".jpeg", ".jpg", ".svg", ".gif", ".webp", ".avif"}
 
 func PasswordValidator(fl validator.FieldLevel) bool {
 	password := fl.Field().String()
@@ -56,19 +63,6 @@ func PasswordValidator(fl validator.FieldLevel) bool {
 	return wasUpper && wasLower && digitsCount >= 2
 }
 
-func AvatarValidator(fl validator.FieldLevel) bool {
-	fileName := fl.Field().Interface().(*multipart.FileHeader).Filename
-	ext := strings.ToLower(filepath.Ext(fileName))
-
-	for _, extention := range fileExtentions {
-		if extention == ext {
-			return true
-		}
-	}
-
-	return false
-}
-
 func idListValidator(idsCount int) validator.Func {
 	return func(fl validator.FieldLevel) bool {
 		idListArr := strings.Split(fl.Field().String(), "_")
@@ -84,4 +78,20 @@ func idListValidator(idsCount int) validator.Func {
 
 		return true
 	}
+}
+
+func fileExtentionValidator(extentionList []string) validator.Func {
+	return func(fl validator.FieldLevel) bool {
+		fileName := fl.Field().Interface().(*multipart.FileHeader).Filename
+		return isValidExtention(fileName, extentionList)
+	}
+}
+
+func VideoHashExtentionValidator(fl validator.FieldLevel) bool {
+	return isValidExtention(fl.Field().String(), videoExtensions)
+
+}
+
+func isValidExtention(fileName string, extentionList []string) bool {
+	return slices.Contains(extentionList, strings.ToLower(filepath.Ext(fileName)))
 }

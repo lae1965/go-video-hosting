@@ -90,14 +90,14 @@ func (client *FilesGRPCClient) DeleteFromGRPCServer(ctx context.Context, fileNam
 	return err
 }
 
-func (client *FilesGRPCClient) GetFromGRPCServer(ctx context.Context, fileName string, sendChunk func(int64, string, []byte) error) error {
+func (client *FilesGRPCClient) GetFromGRPCServer(ctx context.Context, fileName string, start, end int64, sendChunk func(int64, string, []byte) error) error {
 	var fileSize int64
 	mimeType := mime.TypeByExtension(filepath.Ext(fileName))
 
 	stream, err := client.gprcServer.Client.GetFromGRPCServer(ctx, &proto.FileGetRequest{
 		FileName: fileName,
-		Start:    0,
-		End:      -1,
+		Start:    start,
+		End:      end,
 	})
 	if err != nil {
 		logrus.Errorf("Ошибка создания потока: %s", err.Error())

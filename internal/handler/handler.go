@@ -104,6 +104,27 @@ func (h *Handler) InitRoutes() *gin.Engine {
 			playlist.GET("/get_all/:channel_id", h.getAllPlaylistsOfChannel)
 		}
 
+		// video := api.Group("/video", h.AuthMiddleware) //! for testing
+		video := api.Group("/video") //! for testing
+		{
+			video.POST("/create", h.createVideo)
+			video.GET("/get_name/:id", h.getVideoName)
+			video.GET("/download", h.downloadVideo)
+			video.PATCH("/edit", h.editVideoInfo)
+			video.DELETE("/:id", h.deleteVideo)
+			video.GET("/get_one", h.getVideoInfoById)
+			video.GET("/get_favorite", h.getFavoriteVideo)
+			video.GET("/channel/:id", h.getVideosOfChannel)
+			video.GET("/get_all/:playlist_id", h.getVideosOfPlaylist)
+			video.GET("/frameshort/:hash_name", h.getFrameshortbyVideoname)
+			video.PATCH("/like", h.toggleLike)
+			video.PATCH("/dislike", h.toggleDislike)
+			video.GET("/query/:title", h.getVideosByFrame)
+			video.GET("/history/:user_id", h.getVideosViewHistory)
+			video.GET("/likes_list/:user_id", h.getVListOfFavoriteVideos)
+			video.DELETE("/history/del_one", h.deleteViewFromHistory)
+			video.DELETE("/history/del_all/:user_id", h.deleteViewHistoryOfUser)
+		}
 		return router
 	}
 }

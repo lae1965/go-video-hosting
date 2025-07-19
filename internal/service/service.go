@@ -1,7 +1,6 @@
 package service
 
 import (
-	"database/sql"
 	"go-video-hosting/gRPC/client"
 	"go-video-hosting/internal/database"
 	"go-video-hosting/internal/errors"
@@ -9,7 +8,10 @@ import (
 	"mime/multipart"
 
 	"cnb.cool/ordermap/ordermap"
+	"github.com/jmoiron/sqlx"
 )
+
+type CallbackFunc func() (*sqlx.Tx, error)
 
 type Users interface {
 	CreateUser(user model.Users) (*model.UserCreateResponse, *errors.AppError)
@@ -30,7 +32,7 @@ type Users interface {
 }
 
 type Token interface {
-	CreateTokens(transaction *sql.Tx, user model.Users, refreshTokenId int) (*model.TokenResponse, error)
+	CreateTokens(transaction *sqlx.Tx, user model.Users, refreshTokenId int) (*model.TokenResponse, error)
 	RemoveToken(tokenId int) error
 	ValidateToken(tokenString string, tokenKey string) (int, error)
 	GetTokenIdByToken(token string) (int, error)
@@ -55,11 +57,19 @@ type Playlist interface {
 	GetAllPlaylistsOfChannel(channelId int) ([]*model.GetPlaylist, *errors.AppError)
 }
 
+type Video interface {
+	SaveNewVideo(video *model.CreateVideo, fileHeader *multipart.FileHeader) (int, *errors.AppError)
+	GetVideoHashNameById(id int) (string, *errors.AppError)
+	DownloadVideo(hashName string, userId, videoId int, start, end int64, sendChunk func(int64, string, []byte) error) *errors.AppError
+	UpdateVideoInfo(id int, data *ordermap.OrderMap) *errors.AppError
+}
+
 type Service struct {
 	Users
 	Token
 	Channel
 	Playlist
+	Video
 }
 
 func New(db *database.Database, grpcClient grpcclient.FilesGRPCClient) *Service {
@@ -68,5 +78,6 @@ func New(db *database.Database, grpcClient grpcclient.FilesGRPCClient) *Service 
 		Token:    NewTokenService(db.Token),
 		Channel:  NewChannelService(db.Channel, db.Users, db.BeginTransaction),
 		Playlist: NewPlaylistService(db.Playlist, db.BeginTransaction),
+		Video:    NewVideoService(db.Video, db.VideoHistoty, db.BeginTransaction, grpcClient),
 	}
 }

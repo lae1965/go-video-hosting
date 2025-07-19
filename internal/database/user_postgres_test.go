@@ -89,7 +89,7 @@ func TestCreateUser(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			test.mockFunc()
 
-			tx, err := sqlxDB.Begin()
+			tx, err := sqlxDB.Beginx()
 			if err != nil {
 				t.Fatalf("failed to begin transaction: %s", err.Error())
 			}
@@ -764,7 +764,7 @@ func TestChangeChannelsCountOfUser(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			test.mockFunc()
 
-			tx, err := sqlxDB.Begin()
+			tx, err := sqlxDB.Beginx()
 			if err != nil {
 				t.Fatalf("failed to begin transaction: %s", err.Error())
 			}

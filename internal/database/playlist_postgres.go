@@ -43,7 +43,7 @@ func (pp *PlaylistPostgres) IsTitlelUniqueForChannel(channelId int, title string
 	return !exist, nil
 }
 
-func (pp *PlaylistPostgres) CreatePlaylist(transaction *sql.Tx, channelId int, title string, description string) (int, *errors.AppError) {
+func (pp *PlaylistPostgres) CreatePlaylist(transaction *sqlx.Tx, channelId int, title string, description string) (int, *errors.AppError) {
 	query := "INSERT INTO PLAYLIST (channelId, title, description) VALUES ($1, $2, $3) RETURNING id"
 
 	row := transaction.QueryRow(query, channelId, title, description)
@@ -56,7 +56,7 @@ func (pp *PlaylistPostgres) CreatePlaylist(transaction *sql.Tx, channelId int, t
 	return id, nil
 }
 
-func (pp *PlaylistPostgres) UpdatePlaylist(transaction *sql.Tx, channelId int, playlistId int, data map[string]string) *errors.AppError {
+func (pp *PlaylistPostgres) UpdatePlaylist(transaction *sqlx.Tx, channelId int, playlistId int, data map[string]string) *errors.AppError {
 	clauses := []string{}
 	args := []interface{}{}
 	i := 1

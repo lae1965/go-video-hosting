@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	grpcclient "go-video-hosting/gRPC/client"
 	"go-video-hosting/internal/database"
@@ -19,8 +18,6 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/bcrypt"
 )
-
-type CallbackFunc func() (*sql.Tx, error)
 
 type UserService struct {
 	dbUser            database.Users
@@ -209,7 +206,7 @@ func (s *UserService) GetAvatar(id int, sendChunk func(int64, string, []byte) er
 		return errors.New(errors.EmptyField, "this user has no avatar")
 	}
 
-	if err := s.grpcClient.GetFromGRPCServer(context.Background(), avatarFileName, sendChunk); err != nil {
+	if err := s.grpcClient.GetFromGRPCServer(context.Background(), avatarFileName, 0, -1, sendChunk); err != nil {
 		return errors.New(errors.UnknownError, fmt.Sprintf("can't get avatar: %s", err.Error()))
 	}
 
